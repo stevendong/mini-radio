@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - name: Toolchain
         run: swift --version
+      - name: Public source checks
+        run: python3 scripts/check-public.py
       - name: Core tests
         run: swift test --jobs 2
       - name: Build universal application
@@ -68,4 +70,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" artifacts/MiniRadio-0.1.0-universal.zip artifacts/SHA256SUMS --prerelease --title "Mini Radio $RELEASE_TAG preview" --notes 'Native macOS 13+ radio preview for Apple Silicon and Intel. Ad-hoc signed; not notarized. UI/audio acceptance on a real Mac remains required. See the project Notion page for validation and installation details.'
+          gh release create "$RELEASE_TAG" artifacts/MiniRadio-0.1.0-universal.zip artifacts/SHA256SUMS --prerelease --title "Mini Radio $RELEASE_TAG preview" --notes 'Native macOS 13+ radio preview for Apple Silicon and Intel. Ad-hoc signed; not notarized. UI/audio acceptance on a real Mac remains required.'
