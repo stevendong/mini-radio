@@ -20,7 +20,20 @@ jobs:
       - name: Core tests
         run: swift test --jobs 2
       - name: Build universal application
-        run: bash scripts/build-macos.sh
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          bash scripts/build-macos.sh 2>&1 | tee artifacts/build.log
+      - name: Report packaging errors
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('artifacts/build.log')
+          if p.exists():
+              tail = p.read_text()[-6000:]
+              print('::error::' + tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PY
       - name: Launch probe
         continue-on-error: true
         timeout-minutes: 1
@@ -28,12 +41,14 @@ jobs:
           "artifacts/Mini Radio.app/Contents/MacOS/MiniRadio" --smoke-test
           cp "$HOME/Library/Containers/com.stevendong.miniradio/Data/Library/Application Support/MiniRadio/launch-smoke.png" artifacts/launch-smoke.png
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: MiniRadio-0.1.0-universal
           path: |
             artifacts/MiniRadio-0.1.0-universal.zip
             artifacts/SHA256SUMS
             artifacts/launch-smoke.png
+            artifacts/build.log
           if-no-files-found: error
           retention-days: 30
   preview:
