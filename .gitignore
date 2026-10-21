@@ -3,3 +3,9 @@
 .DS_Store
 artifacts/
 *.xcodeproj/xcuserdata/
+.env
+.env.*
+*.pem
+*.p12
+*.key
+*.mobileprovision
