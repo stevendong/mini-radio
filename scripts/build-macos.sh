@@ -21,6 +21,6 @@ iconutil -c icns artifacts/AppIcon.iconset -o "$app/Contents/Resources/AppIcon.i
 plutil -lint "$app/Contents/Info.plist" Resources/MiniRadio.entitlements
 codesign --force --sign - --entitlements Resources/MiniRadio.entitlements "$app"
 codesign --verify --deep --strict --verbose=2 "$app"
-lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/MiniRadio"
+lipo "$app/Contents/MacOS/MiniRadio" -verify_arch arm64 x86_64
 ditto -c -k --sequesterRsrc --keepParent "$app" artifacts/MiniRadio-0.1.0-universal.zip
-shasum -a 256 artifacts/MiniRadio-0.1.0-universal.zip > artifacts/SHA256SUMS
+(cd artifacts && shasum -a 256 MiniRadio-0.1.0-universal.zip > SHA256SUMS)
