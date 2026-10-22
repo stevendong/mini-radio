@@ -86,4 +86,29 @@ final class MiniRadioUITests: XCTestCase {
         app.buttons["player-stop"].tap()
         XCTAssertTrue(app.staticTexts["准备收听"].waitForExistence(timeout: 5))
     }
+
+    func testCarPlaySharesPlaybackWhenConnected() throws {
+        let car = XCUIApplication(bundleIdentifier: "com.apple.CarPlayTemplateUIHost")
+        let home = XCUIApplication(bundleIdentifier: "com.apple.CarPlayApp")
+        guard home.state != .notRunning else {
+            throw XCTSkip("Connect the CarPlay simulator display before running this test")
+        }
+        if home.icons["Mini Radio"].exists { home.icons["Mini Radio"].tap() }
+        let discover = car.buttons["发现"]
+        if discover.exists { discover.tap() }
+        let jazz = car.buttons["Jazz Window"].firstMatch
+        XCTAssertTrue(jazz.waitForExistence(timeout: 10), car.debugDescription + "\n" + home.debugDescription)
+        jazz.tap()
+        let name = car.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Jazz Window")).firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 10), car.debugDescription)
+        app.buttons["open-player"].tap()
+        let status = app.descendants(matching: .any)["player-status"].firstMatch
+        let playing = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "正在直播"), object: status)
+        XCTAssertEqual(XCTWaiter.wait(for: [playing], timeout: 25), .completed, "AVPlayer status: \(status.label)")
+        capture("CarPlay-shared-phone-player")
+        app.buttons["player-play"].tap()
+        XCTAssertTrue(app.staticTexts["已暂停"].waitForExistence(timeout: 5))
+        app.buttons["player-stop"].tap()
+        XCTAssertTrue(app.staticTexts["准备收听"].waitForExistence(timeout: 5))
+    }
 }

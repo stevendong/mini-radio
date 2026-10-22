@@ -22,7 +22,7 @@ def arr(values):
     return "(" + ", ".join(values) + ")"
 
 def settings(values):
-    return "{ " + " ".join(f"{key} = {quote(value)};" for key, value in values.items()) + " }"
+    return "{ " + " ".join(f"{quote(key) if '[' in key else key} = {quote(value)};" for key, value in values.items()) + " }"
 
 source_files = sorted((root / "App/iOS").glob("*.swift")) + sorted((root / "App/Shared").glob("*.swift"))
 refs, builds = [], []
@@ -66,8 +66,10 @@ def config_list(name, base):
 
 project_configs = config_list("project", {"CLANG_ENABLE_MODULES": "YES", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SDKROOT": "iphoneos", "SWIFT_VERSION": "5.0"})
 app_configs = config_list("app", {"PRODUCT_BUNDLE_IDENTIFIER": "com.stevendong.miniradio.ios", "PRODUCT_NAME": "MiniRadio",
-    "INFOPLIST_FILE": "Info.plist", "MARKETING_VERSION": "0.2.1", "CURRENT_PROJECT_VERSION": "3", "TARGETED_DEVICE_FAMILY": "1,2",
+    "INFOPLIST_FILE": "Info.plist", "MARKETING_VERSION": "0.3.0", "CURRENT_PROJECT_VERSION": "4", "TARGETED_DEVICE_FAMILY": "1,2",
     "CODE_SIGN_STYLE": "Automatic", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+    "CARPLAY_ENTITLEMENTS": "", "CODE_SIGN_ENTITLEMENTS": "$(CARPLAY_ENTITLEMENTS)",
+    "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": "MiniRadio-CarPlay.entitlements",
     "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO", "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks"})
 test_configs = config_list("tests", {"PRODUCT_BUNDLE_IDENTIFIER": "com.stevendong.miniradio.ios.uitests", "PRODUCT_NAME": "MiniRadioUITests",
     "GENERATE_INFOPLIST_FILE": "YES", "TEST_TARGET_NAME": "MiniRadio-iOS", "CODE_SIGN_STYLE": "Automatic", "TARGETED_DEVICE_FAMILY": "1,2"})

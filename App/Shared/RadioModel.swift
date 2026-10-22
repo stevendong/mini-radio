@@ -28,6 +28,7 @@ final class RadioModel: ObservableObject {
     private var offset = 0
     private var recentRandom: [String] = []
     private var maySaveLibrary = true
+    private var playbackTab: Tab?
 
     init(automaticallyLoad: Bool = true, storageDirectory: URL? = nil) {
         sync = LibrarySyncController(available: storageDirectory == nil)
@@ -44,7 +45,11 @@ final class RadioModel: ObservableObject {
             guard let self else { return }
             self.library.recordSuccessfulPlayback(station); self.save()
         }
-        playback.onNext = { [weak self] in self?.randomNext() }
+        playback.onNext = { [weak self] in
+            guard let self else { return }
+            if let tab = self.playbackTab { self.randomNext(from: tab) }
+            else { self.randomNext() }
+        }
         sync.snapshot = { [weak self] in
             guard let self, self.maySaveLibrary, self.storageError == nil else {
                 throw SyncServiceError.localStorageUnavailable
@@ -64,7 +69,8 @@ final class RadioModel: ObservableObject {
         if automaticallyLoad { search() }
     }
 
-    func select(_ station: Station) {
+    func select(_ station: Station, from tab: Tab? = nil) {
+        playbackTab = tab
         playback.play(station)
         Task { await directory.recordSelection(station) }
     }
@@ -79,13 +85,28 @@ final class RadioModel: ObservableObject {
     }
 
     func randomNext() {
-        let source = visibleStations
+        randomNext(in: visibleStations, tab: nil)
+    }
+
+    func stations(for tab: Tab) -> [Station] {
+        switch tab {
+        case .discover: return stations
+        case .favorites: return library.favorites
+        case .recent: return library.recent
+        }
+    }
+
+    func randomNext(from tab: Tab) {
+        randomNext(in: stations(for: tab), tab: tab)
+    }
+
+    private func randomNext(in source: [Station], tab: Tab?) {
         let candidates = source.filter { $0.id != playback.station?.id && !recentRandom.contains($0.id) }
         let fallback = source.filter { $0.id != playback.station?.id }
         guard let next = (candidates.isEmpty ? fallback : candidates).randomElement() ?? source.first else {
             expanded = true; notice = "当前列表还没有电台，请搜索或手动添加。"; return
         }
-        recentRandom.append(next.id); recentRandom = Array(recentRandom.suffix(15)); select(next)
+        recentRandom.append(next.id); recentRandom = Array(recentRandom.suffix(15)); select(next, from: tab)
     }
 
     var visibleStations: [Station] {

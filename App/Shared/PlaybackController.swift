@@ -3,6 +3,9 @@ import AVFoundation
 import Combine
 import MediaPlayer
 import RadioCore
+#if os(iOS)
+import UIKit
+#endif
 
 @MainActor
 final class PlaybackController: ObservableObject {
@@ -41,6 +44,17 @@ final class PlaybackController: ObservableObject {
     #if os(iOS)
     private var interruption = AudioInterruptionState()
     private var audioSessionObservers: [NSObjectProtocol] = []
+    private lazy var radioArtwork: MPMediaItemArtwork = {
+        let size = CGSize(width: 512, height: 512)
+        let image = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor(red: 0.76, green: 0.34, blue: 0.12, alpha: 1).setFill()
+            context.cgContext.fill(CGRect(origin: .zero, size: size))
+            UIImage(systemName: "radio", withConfiguration: UIImage.SymbolConfiguration(pointSize: 240))?
+                .withTintColor(.white, renderingMode: .alwaysOriginal)
+                .draw(in: CGRect(x: 128, y: 128, width: 256, height: 256))
+        }
+        return MPMediaItemArtwork(boundsSize: size) { _ in image }
+    }()
     #endif
 
     var isActive: Bool {
@@ -298,8 +312,12 @@ final class PlaybackController: ObservableObject {
         }
         center.nowPlayingInfo = [MPMediaItemPropertyTitle: station.name,
                                 MPMediaItemPropertyArtist: station.detail,
+                                MPMediaItemPropertyAlbumTitle: status.label,
                                 MPNowPlayingInfoPropertyIsLiveStream: true,
                                 MPNowPlayingInfoPropertyPlaybackRate: status == .playing ? 1.0 : 0.0]
+        #if os(iOS)
+        center.nowPlayingInfo?[MPMediaItemPropertyArtwork] = radioArtwork
+        #endif
         #if os(macOS)
         switch status {
         case .playing: center.playbackState = .playing

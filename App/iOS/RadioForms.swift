@@ -93,7 +93,7 @@ struct IOSPrivacyView: View {
                     Link("开源代码", destination: URL(string: "https://github.com/stevendong/mini-radio")!)
                     Link("Radio Browser", destination: URL(string: "https://www.radio-browser.info/")!)
                     Link("体验灵感：RoamDial", destination: URL(string: "https://roamdial.com/about.html")!)
-                    Text("Mini Radio · iOS 0.2.1").foregroundStyle(.secondary)
+                    Text("Mini Radio · iOS 0.3.0").foregroundStyle(.secondary)
                 }
             }.navigationTitle("数据来源与隐私").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
