@@ -16,7 +16,8 @@ files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
 failures = []
 for filename in filter(None, files):
     path = Path(filename)
-    if path.name == ".env" or path.suffix.lower() in {".pem", ".p12", ".mobileprovision", ".key"}:
+    if (path.name == ".env" or "xcuserdata" in path.parts
+            or path.suffix.lower() in {".pem", ".p12", ".mobileprovision", ".key", ".xcuserstate", ".xccheckout", ".xcscmblueprint"}):
         failures.append((filename, "sensitive file type"))
     try:
         content = path.read_text()

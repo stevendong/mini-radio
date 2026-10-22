@@ -3,6 +3,10 @@
 .DS_Store
 artifacts/
 *.xcodeproj/xcuserdata/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
 .env
 .env.*
 *.pem
