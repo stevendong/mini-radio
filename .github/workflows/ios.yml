@@ -24,30 +24,7 @@ jobs:
           set -o pipefail
           bash scripts/build-ios.sh device 2>&1 | tee artifacts/ios-build.log
       - name: Select simulators
-        run: |
-          xcrun simctl list devices available -j > artifacts/simulators.json
-          export SIM_SDK_VERSION="$(xcrun --sdk iphonesimulator --show-sdk-version)"
-          python3 - <<'PY'
-          import json, os, re
-          devices = json.load(open('artifacts/simulators.json'))['devices']
-          sdk = tuple(int(p) for p in os.environ['SIM_SDK_VERSION'].split('.')[:2])
-          compatible = []
-          for runtime, entries in devices.items():
-              match = re.search(r'\.iOS-(\d+)-(\d+)', runtime)
-              if match:
-                  version = tuple(map(int, match.groups()))
-                  if version <= sdk and entries:
-                      compatible.append((version, entries))
-          if not compatible:
-              raise SystemExit('No available iOS simulator compatible with the selected Xcode SDK')
-          version, available = max(compatible, key=lambda item: item[0])
-          print('SDK', os.environ['SIM_SDK_VERSION'], 'simulator runtime', version)
-          with open(os.environ['GITHUB_ENV'], 'a') as env:
-              for label, prefix in [('PHONE', 'iPhone'), ('TABLET', 'iPad')]:
-                  device = next(d for d in available if d['name'].startswith(prefix))
-                  env.write(label + '_UDID=' + device['udid'] + '\n')
-                  print(label, device['name'])
-          PY
+        run: python3 scripts/select-ios-simulators.py
       - name: Boot iPhone simulator
         timeout-minutes: 6
         run: |
@@ -64,18 +41,6 @@ jobs:
             -destination "platform=iOS Simulator,id=$PHONE_UDID" -derivedDataPath artifacts/ios-simulator \
             -resultBundlePath artifacts/iPhone-Tests.xcresult -parallel-testing-enabled NO -jobs 2 test \
             2>&1 | tee artifacts/ios-tests.log
-      - name: iPad launch and layout capture
-        timeout-minutes: 8
-        run: |
-          xcrun simctl boot "$TABLET_UDID" || true
-          xcrun simctl bootstatus "$TABLET_UDID" -b
-          app=artifacts/ios-simulator/Build/Products/Debug-iphonesimulator/MiniRadio.app
-          xcrun simctl install "$TABLET_UDID" "$app"
-          SIMCTL_CHILD_MINIRADIO_UI_TEST_RUN="$(uuidgen)" xcrun simctl launch --terminate-running-process \
-            "$TABLET_UDID" com.stevendong.miniradio.ios --ui-testing
-          sleep 6
-          mkdir -p artifacts/iPad-screenshots
-          xcrun simctl io "$TABLET_UDID" screenshot artifacts/iPad-screenshots/Discovery.png
       - name: Export screenshots
         if: always()
         timeout-minutes: 2
@@ -112,7 +77,43 @@ jobs:
             artifacts/ipad-tests.log
             artifacts/ios-test-server.log
             artifacts/iPhone-screenshots
-            artifacts/iPad-screenshots
             iOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
           if-no-files-found: error
+          retention-days: 30
+  ipad:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Select SDK-compatible iPad
+        run: python3 scripts/select-ios-simulators.py
+      - name: Boot iPad in an independent runner
+        timeout-minutes: 12
+        run: |
+          xcrun simctl boot "$TABLET_UDID" || true
+          xcrun simctl bootstatus "$TABLET_UDID" -b
+      - name: Build iPad simulator app
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          xcodebuild -project iOS/MiniRadio.xcodeproj -scheme MiniRadio-iOS -configuration Debug \
+            -destination "platform=iOS Simulator,id=$TABLET_UDID" -derivedDataPath artifacts/ios-simulator \
+            -jobs 2 build 2>&1 | tee artifacts/ipad-build.log
+      - name: Launch and capture iPad layout
+        timeout-minutes: 2
+        run: |
+          xcrun simctl install "$TABLET_UDID" artifacts/ios-simulator/Build/Products/Debug-iphonesimulator/MiniRadio.app
+          SIMCTL_CHILD_MINIRADIO_UI_TEST_RUN="$(uuidgen)" xcrun simctl launch --terminate-running-process \
+            "$TABLET_UDID" com.stevendong.miniradio.ios --ui-testing
+          sleep 6
+          mkdir -p artifacts/iPad-screenshots
+          xcrun simctl io "$TABLET_UDID" screenshot artifacts/iPad-screenshots/Discovery.png
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: MiniRadio-iPad-layout
+          path: |
+            artifacts/iPad-screenshots
+            artifacts/ipad-build.log
+          if-no-files-found: warn
           retention-days: 30
