@@ -6,6 +6,7 @@ if [[ "$(uname -s)" != Darwin ]]; then
   exit 1
 fi
 mkdir -p artifacts
+plutil -lint iOS/MiniRadio.xcodeproj/project.pbxproj iOS/Info.plist iOS/PrivacyInfo.xcprivacy
 mac_sdk="$(xcrun --sdk macosx --show-sdk-path)"
 xcrun --sdk macosx swift -sdk "$mac_sdk" -target "$(uname -m)-apple-macosx13.0" \
   scripts/make-icon.swift iOS/Assets.xcassets/AppIcon.appiconset --ios

@@ -289,17 +289,25 @@ final class PlaybackController: ObservableObject {
 
     private func updateNowPlaying() {
         let center = MPNowPlayingInfoCenter.default()
-        guard let station else { center.nowPlayingInfo = nil; center.playbackState = .stopped; return }
+        guard let station else {
+            center.nowPlayingInfo = nil
+            #if os(macOS)
+            center.playbackState = .stopped
+            #endif
+            return
+        }
         center.nowPlayingInfo = [MPMediaItemPropertyTitle: station.name,
                                 MPMediaItemPropertyArtist: station.detail,
                                 MPNowPlayingInfoPropertyIsLiveStream: true,
                                 MPNowPlayingInfoPropertyPlaybackRate: status == .playing ? 1.0 : 0.0]
+        #if os(macOS)
         switch status {
         case .playing: center.playbackState = .playing
         case .paused: center.playbackState = .paused
         case .idle, .failed: center.playbackState = .stopped
         default: center.playbackState = .interrupted
         }
+        #endif
     }
 }
 #endif

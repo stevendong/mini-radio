@@ -9,3 +9,5 @@ artifacts/
 *.p12
 *.key
 *.mobileprovision
+__pycache__/
+*.pyc

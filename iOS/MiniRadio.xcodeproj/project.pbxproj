@@ -19,18 +19,20 @@
 		3685E330EC5277A9DD5661C6 = { isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C1FFFB61196F8C993C0041FD = { isa = PBXBuildFile; fileRef = 3685E330EC5277A9DD5661C6; };
 		59BD0A3FF43B32849B319E64 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		96ED5C5789B174A01557791C = { isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A39309C4376B4D66A5739C05 = { isa = PBXBuildFile; fileRef = 96ED5C5789B174A01557791C; };
 		C8E410C79A41FEC4C7336287 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniRadioUITests/MiniRadioUITests.swift; sourceTree = "<group>"; };
 		CD105291464DBD1C3C07E1CA = { isa = PBXBuildFile; fileRef = C8E410C79A41FEC4C7336287; };
 		4E783A9E10D2A8ABA38CD11C = { isa = PBXFileReference; explicitFileType = wrapper.application; path = MiniRadio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C7CCDEB3609F1FAA874E941 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = MiniRadioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FBDC4F23F93125BBEEAE800C = { isa = PBXGroup; children = (4E783A9E10D2A8ABA38CD11C, 6C7CCDEB3609F1FAA874E941); name = Products; sourceTree = "<group>"; };
-		870B3294C0CBD48AF6BBCC1B = { isa = PBXGroup; children = (25AA40E57B6FB9E8157BE5F6, 246D173BD288433015FD8552, 70BFBA3974C5F0B3A5435A92, 28393A62F2707092D8D98C63, 0F6488E5571D43BF51C0A1FA, 6D5E0FECF930CA9397E29E47, 3685E330EC5277A9DD5661C6, 59BD0A3FF43B32849B319E64, C8E410C79A41FEC4C7336287, FBDC4F23F93125BBEEAE800C); sourceTree = "<group>"; };
+		870B3294C0CBD48AF6BBCC1B = { isa = PBXGroup; children = (25AA40E57B6FB9E8157BE5F6, 246D173BD288433015FD8552, 70BFBA3974C5F0B3A5435A92, 28393A62F2707092D8D98C63, 0F6488E5571D43BF51C0A1FA, 6D5E0FECF930CA9397E29E47, 3685E330EC5277A9DD5661C6, 59BD0A3FF43B32849B319E64, 96ED5C5789B174A01557791C, C8E410C79A41FEC4C7336287, FBDC4F23F93125BBEEAE800C); sourceTree = "<group>"; };
 		582681C2EAE02B3F3D399C0C = { isa = XCLocalSwiftPackageReference; relativePath = ..; };
 		60E262C5E4EFA18325B3550C = { isa = XCSwiftPackageProductDependency; package = 582681C2EAE02B3F3D399C0C; productName = RadioCore; };
 		E347B75DD10A4318C3140295 = { isa = PBXBuildFile; productRef = 60E262C5E4EFA18325B3550C; };
 		BCE16DD0260827ECF338C787 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (85FF6E56DBD0F0C3E376C827, 86B9DEA14D49EDDECF991984, 111649AB700BE067DE33C573, 430B0B6E6C0E1885376103E9, 7B976C6E84ADFB467BE711AA, F04C7B1004B59FB59F1212D1); runOnlyForDeploymentPostprocessing = 0; };
 		7561BFB015D8F536760CB671 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (E347B75DD10A4318C3140295); runOnlyForDeploymentPostprocessing = 0; };
-		0189424A5A60FED329FA868E = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (C1FFFB61196F8C993C0041FD); runOnlyForDeploymentPostprocessing = 0; };
+		0189424A5A60FED329FA868E = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (C1FFFB61196F8C993C0041FD, A39309C4376B4D66A5739C05); runOnlyForDeploymentPostprocessing = 0; };
 		77A03FEE20FE96AD9384861E = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (CD105291464DBD1C3C07E1CA); runOnlyForDeploymentPostprocessing = 0; };
 		E05DB79C430AA1B0BA487AFC = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		D5C76E148680C094C001AC35 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
@@ -47,7 +49,7 @@
 		7E85D4A68785761E1DBB22D8 = { isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = F75109BEB4DD8800DA6B45F8; remoteInfo = "MiniRadio-iOS"; };
 		BAE932EF166B50AB877FDC6F = { isa = PBXTargetDependency; target = F75109BEB4DD8800DA6B45F8; targetProxy = 7E85D4A68785761E1DBB22D8; };
 		C062A5A4A7F4F37DD90F54CB = { isa = PBXNativeTarget; buildConfigurationList = 7456573A07C28463D34C2FFC; buildPhases = (77A03FEE20FE96AD9384861E, E05DB79C430AA1B0BA487AFC, D5C76E148680C094C001AC35); buildRules = (); dependencies = (BAE932EF166B50AB877FDC6F); name = MiniRadioUITests; productName = MiniRadioUITests; productReference = 6C7CCDEB3609F1FAA874E941; productType = "com.apple.product-type.bundle.ui-testing"; };
-		98F54143AB4E86B28C3AFEE0 = { isa = PBXProject; attributes = { LastUpgradeCheck = 1640; TargetAttributes = { F75109BEB4DD8800DA6B45F8 = { CreatedOnToolsVersion = 16.4; }; C062A5A4A7F4F37DD90F54CB = { CreatedOnToolsVersion = 16.4; TestTargetID = F75109BEB4DD8800DA6B45F8; }; }; buildConfigurationList = 6650A2B5E24FA7522CE6B81C; compatibilityVersion = "Xcode 15.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = 870B3294C0CBD48AF6BBCC1B; packageReferences = (582681C2EAE02B3F3D399C0C); productRefGroup = FBDC4F23F93125BBEEAE800C; projectDirPath = ""; projectRoot = ""; targets = (F75109BEB4DD8800DA6B45F8, C062A5A4A7F4F37DD90F54CB); };
+		98F54143AB4E86B28C3AFEE0 = { isa = PBXProject; attributes = { LastUpgradeCheck = 1640; TargetAttributes = { F75109BEB4DD8800DA6B45F8 = { CreatedOnToolsVersion = 16.4; }; C062A5A4A7F4F37DD90F54CB = { CreatedOnToolsVersion = 16.4; TestTargetID = F75109BEB4DD8800DA6B45F8; }; }; }; buildConfigurationList = 6650A2B5E24FA7522CE6B81C; compatibilityVersion = "Xcode 15.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = 870B3294C0CBD48AF6BBCC1B; packageReferences = (582681C2EAE02B3F3D399C0C); productRefGroup = FBDC4F23F93125BBEEAE800C; projectDirPath = ""; projectRoot = ""; targets = (F75109BEB4DD8800DA6B45F8, C062A5A4A7F4F37DD90F54CB); };
 	};
 	rootObject = 98F54143AB4E86B28C3AFEE0;
 }
