@@ -26,6 +26,8 @@ jobs:
       - name: Core and two-device sync integration tests
         run: |
           openssl rand 32 > "$RUNNER_TEMP/sync.key"
+          SYNC_DATABASE="$RUNNER_TEMP/sync.sqlite" SYNC_MASTER_KEY_FILE="$RUNNER_TEMP/sync.key" \
+            node server/admin.mjs invite --count 2 --out "$RUNNER_TEMP/sync-invitations.json"
           PORT=18768 SYNC_DATABASE="$RUNNER_TEMP/sync.sqlite" SYNC_MASTER_KEY_FILE="$RUNNER_TEMP/sync.key" node server/index.mjs &
           server_pid=$!
           trap 'kill "$server_pid" || true' EXIT
@@ -33,7 +35,8 @@ jobs:
             curl -fsS http://127.0.0.1:18768/healthz && break
             sleep 1
           done
-          MINIRADIO_SYNC_TEST_URL=http://127.0.0.1:18768 swift test --jobs 2
+          MINIRADIO_SYNC_TEST_URL=http://127.0.0.1:18768 \
+            MINIRADIO_SYNC_TEST_INVITES_FILE="$RUNNER_TEMP/sync-invitations.json" swift test --jobs 2
       - name: Build universal application
         run: |
           mkdir -p artifacts

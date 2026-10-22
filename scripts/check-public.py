@@ -10,6 +10,7 @@ rules = {
     "private key material": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     "GitHub credential": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})\b"),
     "provider credential": re.compile(r"\b(?:AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9]{32,})\b"),
+    "radio sync credential": re.compile(r"\b(?:MR1|MRI)_[A-Za-z0-9_-]{43}\b"),
     "personal email": re.compile(r"\b[A-Za-z0-9_.+-]+@(?:gmail\.com|outlook\.com|hotmail\.com|qq\.com|126\.com|163\.com)\b", re.I),
 }
 files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")

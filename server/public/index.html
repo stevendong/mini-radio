@@ -14,12 +14,15 @@
   </section>
   <section class="card" aria-labelledby="connect-title"><div class="step">01 — 连接你的设备</div>
     <h2 id="connect-title">一把密钥，同一个电台收藏夹。</h2>
-    <ol><li>在下方生成一把同步密钥，并私下保存。</li><li>打开 Mini Radio 的“收藏与收听同步”。</li><li>服务地址填写 <code>https://radio.myaichatbox.com</code>，在各台设备输入同一密钥，保存并启用。</li></ol>
+    <ol><li>使用一次性邀请码生成同步密钥，并私下保存。</li><li>打开 Mini Radio 的“收藏与收听同步”。</li><li>服务地址填写 <code>https://radio.myaichatbox.com</code>，在各台设备输入同一密钥，保存并启用。</li></ol>
+    <label for="invitation">一次性邀请码</label>
+    <input id="invitation" type="password" autocomplete="off" spellcheck="false" placeholder="MRI_…" aria-describedby="invitation-help">
+    <p class="small" id="invitation-help">新建空间需向服务维护者申请邀请码。已有同步密钥继续可用，无需重新生成。邀请码以发放时的有效期为准，只可使用一次。</p>
     <button id="create" type="button">生成同步密钥 <span aria-hidden="true">↗</span></button>
     <div id="credential" hidden><label for="key">同步密钥 · 仅在本次页面显示</label>
       <input id="key" type="password" readonly autocomplete="off" spellcheck="false" aria-label="生成的同步密钥">
       <div class="actions"><button id="copy" class="secondary" type="button">复制密钥</button><button id="reveal" class="quiet" type="button">显示</button></div>
-      <p class="small">持有密钥即可读取、修改和删除这个空间。不要放入公开截图、仓库或群聊；丢失后无法找回。</p>
+      <p class="small">邀请码已使用。持有密钥即可读取、修改和删除这个空间。不要放入公开截图、仓库或群聊；丢失后无法找回。</p>
     </div>
     <p id="status" role="status" aria-live="polite"></p>
   </section>

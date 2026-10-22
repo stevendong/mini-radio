@@ -9,10 +9,17 @@ final class SyncServiceIntegrationTests: XCTestCase {
         guard let address = ProcessInfo.processInfo.environment["MINIRADIO_SYNC_TEST_URL"], let url = URL(string: address) else {
             throw XCTSkip("Set MINIRADIO_SYNC_TEST_URL for a real two-device service test")
         }
+        guard let invitationFile = ProcessInfo.processInfo.environment["MINIRADIO_SYNC_TEST_INVITES_FILE"],
+              let object = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: invitationFile))) as? [String: Any],
+              let invitations = object["invitations"] as? [[String: Any]], invitations.count >= 2,
+              let firstInvite = invitations[0]["code"] as? String, let secondInvite = invitations[1]["code"] as? String else {
+            throw SyncServiceError.unavailable
+        }
         let session = URLSession(configuration: .ephemeral)
-        func create() async throws -> String {
+        func create(invitation: String) async throws -> String {
             var request = URLRequest(url: url.appendingPathComponent("v1/keys"))
-            request.httpMethod = "POST"; request.httpBody = Data("{}".utf8)
+            request.httpMethod = "POST"
+            request.httpBody = try JSONSerialization.data(withJSONObject: ["invitation": invitation])
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let (data, response) = try await session.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 201,
@@ -27,7 +34,7 @@ final class SyncServiceIntegrationTests: XCTestCase {
             let (_, response) = try await session.data(for: request)
             XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         }
-        let key = try await create(), otherKey = try await create()
+        let key = try await create(invitation: firstInvite), otherKey = try await create(invitation: secondInvite)
         let phone = LibrarySyncClient(server: url, key: key), mac = LibrarySyncClient(server: url, key: key)
         let other = LibrarySyncClient(server: url, key: otherKey)
         do {
