@@ -64,17 +64,18 @@ jobs:
             -destination "platform=iOS Simulator,id=$PHONE_UDID" -derivedDataPath artifacts/ios-simulator \
             -resultBundlePath artifacts/iPhone-Tests.xcresult -parallel-testing-enabled NO -jobs 2 test \
             2>&1 | tee artifacts/ios-tests.log
-      - name: iPad layout test
+      - name: iPad launch and layout capture
         timeout-minutes: 8
         run: |
           xcrun simctl boot "$TABLET_UDID" || true
           xcrun simctl bootstatus "$TABLET_UDID" -b
-          set -o pipefail
-          xcodebuild -project iOS/MiniRadio.xcodeproj -scheme MiniRadio-iOS -configuration Debug \
-            -destination "platform=iOS Simulator,id=$TABLET_UDID" -derivedDataPath artifacts/ios-simulator \
-            -resultBundlePath artifacts/iPad-Tests.xcresult -parallel-testing-enabled NO -jobs 2 \
-            -only-testing:MiniRadioUITests/MiniRadioUITests/testDiscoveryLayout test \
-            2>&1 | tee artifacts/ipad-tests.log
+          app=artifacts/ios-simulator/Build/Products/Debug-iphonesimulator/MiniRadio.app
+          xcrun simctl install "$TABLET_UDID" "$app"
+          SIMCTL_CHILD_MINIRADIO_UI_TEST_RUN="$(uuidgen)" xcrun simctl launch --terminate-running-process \
+            "$TABLET_UDID" com.stevendong.miniradio.ios --ui-testing
+          sleep 6
+          mkdir -p artifacts/iPad-screenshots
+          xcrun simctl io "$TABLET_UDID" screenshot artifacts/iPad-screenshots/Discovery.png
       - name: Export screenshots
         if: always()
         timeout-minutes: 2
