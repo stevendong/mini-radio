@@ -1,4 +1,4 @@
-#if os(macOS)
+#if os(macOS) || os(iOS)
 import AVFoundation
 import Combine
 import MediaPlayer
@@ -38,15 +38,24 @@ final class PlaybackController: ObservableObject {
     private var sleepTask: Task<Void, Never>?
     private var reportedGeneration: UUID?
     private var remoteTargets: [(MPRemoteCommand, Any)] = []
+    #if os(iOS)
+    private var interruption = AudioInterruptionState()
+    private var audioSessionObservers: [NSObjectProtocol] = []
+    #endif
 
     var isActive: Bool {
         switch status { case .playing, .connecting, .reconnecting: return true; default: return false }
     }
 
     init() {
+        #if os(iOS)
+        volume = 1
+        observeAudioSession()
+        #else
         if UserDefaults.standard.object(forKey: "volume") != nil {
             volume = min(1, max(0, UserDefaults.standard.double(forKey: "volume")))
         }
+        #endif
         let center = MPRemoteCommandCenter.shared()
         bind(center.playCommand) { $0.resume() }
         bind(center.pauseCommand) { $0.pause() }
@@ -69,11 +78,28 @@ final class PlaybackController: ObservableObject {
     func restore(_ station: Station?) { self.station = station; status = station == nil ? .idle : .paused }
 
     func play(_ station: Station) {
+        #if os(iOS)
+        interruption.userChangedPlayback()
+        #endif
         invalidatePlayback()
         self.station = station
         reportedGeneration = nil
+        #if os(iOS)
+        do {
+            let audio = AVAudioSession.sharedInstance()
+            try audio.setCategory(.playback, mode: .default)
+            try audio.setActive(true)
+        } catch {
+            status = .failed("暂时无法使用音频输出，请稍后重播")
+            updateNowPlaying(); return
+        }
+        #endif
         guard let ticket = policy.start(urls: station.streamURLs) else {
-            status = .failed("电台没有有效的直播地址"); updateNowPlaying(); return
+            status = .failed("电台没有有效的直播地址")
+            #if os(iOS)
+            deactivateAudioSession()
+            #endif
+            updateNowPlaying(); return
         }
         begin(ticket)
     }
@@ -82,6 +108,16 @@ final class PlaybackController: ObservableObject {
     func resume() { if let station { play(station) } else { onNext?() } }
 
     func pause() {
+        #if os(iOS)
+        interruption.userChangedPlayback()
+        #endif
+        suspendPlayback()
+        #if os(iOS)
+        deactivateAudioSession()
+        #endif
+    }
+
+    private func suspendPlayback() {
         invalidatePlayback()
         status = station == nil ? .idle : .paused
         updateNowPlaying()
@@ -97,6 +133,10 @@ final class PlaybackController: ObservableObject {
         stop()
         remoteTargets.forEach { $0.0.removeTarget($0.1) }
         remoteTargets.removeAll()
+        #if os(iOS)
+        audioSessionObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        audioSessionObservers.removeAll()
+        #endif
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
@@ -191,6 +231,9 @@ final class PlaybackController: ObservableObject {
         teardownAttempt()
         guard let next else {
             status = .failed("连接失败，试试重播或下一站")
+            #if os(iOS)
+            deactivateAudioSession()
+            #endif
             updateNowPlaying(); return
         }
         status = .reconnecting(next.attempt)
@@ -202,6 +245,47 @@ final class PlaybackController: ObservableObject {
             self?.begin(next)
         }
     }
+
+    #if os(iOS)
+    private func deactivateAudioSession() {
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private func observeAudioSession() {
+        let center = NotificationCenter.default
+        audioSessionObservers.append(center.addObserver(forName: AVAudioSession.interruptionNotification,
+                                                        object: nil, queue: .main) { [weak self] note in
+            let kind = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? NSNumber)?.uintValue
+            let options = (note.userInfo?[AVAudioSessionInterruptionOptionKey] as? NSNumber)?.uintValue ?? 0
+            Task { @MainActor [weak self] in
+                guard let self, let kind else { return }
+                if kind == AVAudioSession.InterruptionType.began.rawValue {
+                    self.interruption.begin(wasPlaying: self.isActive)
+                    self.suspendPlayback()
+                } else if kind == AVAudioSession.InterruptionType.ended.rawValue {
+                    let allowed = AVAudioSession.InterruptionOptions(rawValue: options).contains(.shouldResume)
+                    if self.interruption.end(systemAllowsResume: allowed) { self.resume() }
+                }
+            }
+        })
+        audioSessionObservers.append(center.addObserver(forName: AVAudioSession.routeChangeNotification,
+                                                        object: nil, queue: .main) { [weak self] note in
+            let reason = (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? NSNumber)?.uintValue
+            guard reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue else { return }
+            Task { @MainActor [weak self] in self?.pause() }
+        })
+        audioSessionObservers.append(center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification,
+                                                        object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.interruption.userChangedPlayback()
+                self.suspendPlayback()
+                self.status = .failed("音频服务已重置，请重新播放")
+                self.updateNowPlaying()
+            }
+        })
+    }
+    #endif
 
     private func updateNowPlaying() {
         let center = MPNowPlayingInfoCenter.default()

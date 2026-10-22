@@ -15,6 +15,13 @@ public struct StationPage: Sendable {
 }
 
 public actor RadioDirectory {
+    #if os(iOS)
+    private static let userAgent = "MiniRadio/0.1.0 (iOS; github.com/stevendong/mini-radio)"
+    #elseif os(macOS)
+    private static let userAgent = "MiniRadio/0.1.0 (macOS; github.com/stevendong/mini-radio)"
+    #else
+    private static let userAgent = "MiniRadio/0.1.0 (github.com/stevendong/mini-radio)"
+    #endif
     private let session: URLSession
     private var servers: [URL] = []
     private var discoveredAt = Date.distantPast
@@ -26,7 +33,7 @@ public actor RadioDirectory {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 8
             config.timeoutIntervalForResource = 12
-            config.httpAdditionalHeaders = ["User-Agent": "MiniRadio/0.1.0 (macOS; github.com/stevendong/mini-radio)"]
+            config.httpAdditionalHeaders = ["User-Agent": Self.userAgent]
             self.session = URLSession(configuration: config)
         }
     }
@@ -54,7 +61,7 @@ public actor RadioDirectory {
 
     private func request(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url)
-        req.setValue("MiniRadio/0.1.0 (macOS; github.com/stevendong/mini-radio)", forHTTPHeaderField: "User-Agent")
+        req.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
         let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
               data.count < 8_000_000 else { throw DirectoryError.unavailable }

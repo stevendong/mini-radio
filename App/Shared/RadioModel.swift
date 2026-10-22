@@ -1,4 +1,4 @@
-#if os(macOS)
+#if os(macOS) || os(iOS)
 import Foundation
 import Combine
 import RadioCore
@@ -28,8 +28,8 @@ final class RadioModel: ObservableObject {
     private var recentRandom: [String] = []
     private var maySaveLibrary = true
 
-    init() {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    init(automaticallyLoad: Bool = true, storageDirectory: URL? = nil) {
+        let base = storageDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MiniRadio", isDirectory: true)
         store = LibraryStore(directory: base)
         do { library = try store.load() }
@@ -44,7 +44,7 @@ final class RadioModel: ObservableObject {
         }
         playback.onNext = { [weak self] in self?.randomNext() }
         loadCache()
-        search()
+        if automaticallyLoad { search() }
     }
 
     func select(_ station: Station) {
