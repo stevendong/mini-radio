@@ -25,9 +25,12 @@ struct MiniRadioApp: App {
         }
         Window("数据来源与隐私", id: "privacy") { PrivacyView() }
             .windowResizability(.contentSize)
-        MenuBarExtra("Mini Radio", systemImage: "radio") {
-            StatusMenu(model: model, playback: model.playback)
+        MenuBarExtra {
+            StatusBarPanel(model: model, playback: model.playback)
+        } label: {
+            StatusBarLabel(playback: model.playback)
         }
+        .menuBarExtraStyle(.window)
     }
 }
 

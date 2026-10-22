@@ -4,13 +4,15 @@
 
 菜单栏控制、随机换台、电台搜索、收藏与最近收听、手动直播地址、音量和睡眠定时。
 
+macOS 顶部菜单栏显示当前电台名称；点击后可查看电台信息、播放状态和音质，直接播放/暂停、停止、随机换台、收藏、调节音量或静音、设置睡眠定时，并从收藏和最近收听快速选台。播放器窗口关闭后仍可通过菜单栏控制收听。
+
 ```sh
 swift test --jobs 2
 bash scripts/build-macos.sh
 bash scripts/build-ios.sh device
 ```
 
-构建脚本需在 Mac 上运行，产出 `artifacts/MiniRadio-0.1.0-universal.zip`，包含 Apple Silicon / Intel 通用应用。当前使用 ad-hoc 签名，尚未公证。
+构建脚本需在 Mac 上运行，产出 `artifacts/MiniRadio-0.1.1-universal.zip`，包含 Apple Silicon / Intel 通用应用。当前使用 ad-hoc 签名，尚未公证。
 
 电台目录：[Radio Browser](https://www.radio-browser.info/) · 体验灵感：[RoamDial](https://roamdial.com/about.html)
 

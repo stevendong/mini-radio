@@ -8,6 +8,7 @@ fi
 export MACOSX_DEPLOYMENT_TARGET=13.0
 mkdir -p artifacts
 app="$PWD/artifacts/Mini Radio.app"
+version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 for arch in arm64 x86_64; do
   swift build -c release --product MiniRadio --arch "$arch" --jobs 2
@@ -22,5 +23,5 @@ plutil -lint "$app/Contents/Info.plist" Resources/MiniRadio.entitlements
 codesign --force --sign - --entitlements Resources/MiniRadio.entitlements "$app"
 codesign --verify --deep --strict --verbose=2 "$app"
 lipo "$app/Contents/MacOS/MiniRadio" -verify_arch arm64 x86_64
-ditto -c -k --sequesterRsrc --keepParent "$app" artifacts/MiniRadio-0.1.0-universal.zip
-(cd artifacts && shasum -a 256 MiniRadio-0.1.0-universal.zip > SHA256SUMS)
+ditto -c -k --sequesterRsrc --keepParent "$app" "artifacts/MiniRadio-$version-universal.zip"
+(cd artifacts && shasum -a 256 "MiniRadio-$version-universal.zip" > SHA256SUMS)

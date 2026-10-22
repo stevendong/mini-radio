@@ -234,7 +234,7 @@ struct PrivacyView: View {
             Text("目录健康状态不代表当前网络一定可播。离线时可以查看本地收藏和缓存，直播仍然需要网络。")
             Link("Radio Browser", destination: URL(string: "https://www.radio-browser.info/")!)
             Link("体验灵感：RoamDial", destination: URL(string: "https://roamdial.com/about.html")!)
-            Text("0.1.0 · 原生 macOS 小收音机").font(.caption).foregroundStyle(.secondary)
+            Text("0.1.1 · 原生 macOS 小收音机").font(.caption).foregroundStyle(.secondary)
         }.font(.system(size: 13)).padding(28).frame(width: 440)
     }
 }
@@ -254,33 +254,4 @@ struct WindowConfiguration: NSViewRepresentable {
     }
 }
 
-struct StatusMenu: View {
-    @ObservedObject var model: RadioModel
-    @ObservedObject var playback: PlaybackController
-    @Environment(\.openWindow) private var openWindow
-    var body: some View {
-        Text(playback.station?.name ?? "Mini Radio")
-        Text(playback.status.label)
-        Divider()
-        Button(playback.isActive ? "暂停" : "播放") { playback.toggle() }
-        Button("随机下一站") { model.randomNext() }
-        if let station = playback.station {
-            Button(model.isFavorite(station) ? "取消收藏" : "收藏当前电台") { model.toggleFavorite(station) }
-        }
-        if !model.library.favorites.isEmpty {
-            Menu("收藏电台") {
-                ForEach(model.library.favorites) { station in Button(station.name) { model.select(station) } }
-            }
-        }
-        Divider()
-        Button("打开播放器") {
-            openWindow(id: "player")
-            NSApplication.shared.activate(ignoringOtherApps: true)
-        }
-        Button("停止播放") { playback.stop() }
-        Divider()
-        Button("数据来源与隐私") { openWindow(id: "privacy") }
-        Button("退出 Mini Radio") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
-    }
-}
 #endif
