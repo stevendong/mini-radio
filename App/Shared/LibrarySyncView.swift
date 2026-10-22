@@ -17,6 +17,7 @@ struct LibrarySyncView: View {
                     .accessibilityIdentifier("sync-key")
                 Text("在其他设备填写相同的服务地址和密钥，即可合并收藏与最近收听。更换服务地址时需重新输入密钥。")
                     .font(.caption).foregroundStyle(.secondary)
+                Link("生成或管理同步密钥", destination: URL(string: "https://radio.myaichatbox.com")!)
                 Button("保存并启用同步") {
                     do {
                         try sync.configure(server: server, key: key)
@@ -52,6 +53,7 @@ struct LibrarySyncView: View {
                 Text("开启后，收藏、取消收藏记录、电台地址、最近 50 个收听电台及其时间会发送到你配置的服务。密钥仅保存在系统钥匙串中。")
                 Text("修改会自动同步；前台使用期间每分钟检查更新，回到应用时也会同步。离线时先保存在本机，服务恢复后自动重试。")
                 Text("同步不会中断正在播放的电台，也不会远程控制另一台设备的播放、音量或睡眠定时。停用同步保留本机和服务端已有数据。")
+                Text("默认服务通过 HTTPS 传输，并在服务端加密存储。服务端持有存储密钥，能够解密；连接会暴露 IP 与请求时间。网页可停用密钥并删除云端数据，加密备份最多保留 7 天。")
             } header: { Text("同步范围与隐私") }
                 .font(.caption).foregroundStyle(.secondary)
         }

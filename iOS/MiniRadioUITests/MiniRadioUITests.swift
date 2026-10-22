@@ -27,6 +27,17 @@ final class MiniRadioUITests: XCTestCase {
         capture("NowPlaying-empty")
     }
 
+    func testSyncSettingsOfferPrivateKeySetup() {
+        app.buttons["更多选项"].tap()
+        app.buttons["library-sync"].tap()
+        XCTAssertTrue(app.textFields["sync-server"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.secureTextFields["sync-key"].exists)
+        XCTAssertTrue(app.links["生成或管理同步密钥"].exists)
+        capture("Sync-settings")
+        app.buttons["完成"].tap()
+        XCTAssertTrue(app.buttons["station-ui-jazz"].waitForExistence(timeout: 5))
+    }
+
     func testPlaybackPauseAndStopUseRealPlayer() {
         app.buttons["station-ui-jazz"].tap()
         app.buttons["open-player"].tap()

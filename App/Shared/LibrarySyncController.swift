@@ -40,6 +40,7 @@ final class LibrarySyncController: ObservableObject {
             preferences.set(serverAddress, forKey: "librarySync.server")
         }
         lastSyncedAt = preferences.object(forKey: "librarySync.lastSyncedAt") as? Date
+        if serverAddress.isEmpty { serverAddress = "https://radio.myaichatbox.com" }
         if preferences.bool(forKey: "librarySync.configured") {
             do {
                 key = try readKey()

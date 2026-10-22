@@ -12,7 +12,7 @@ bash scripts/build-macos.sh
 bash scripts/build-ios.sh device
 ```
 
-构建脚本需在 Mac 上运行，产出 `artifacts/MiniRadio-0.2.0-universal.zip`，包含 Apple Silicon / Intel 通用应用。当前使用 ad-hoc 签名，尚未公证。
+构建脚本需在 Mac 上运行，产出 `artifacts/MiniRadio-0.2.1-universal.zip`，包含 Apple Silicon / Intel 通用应用。当前使用 ad-hoc 签名，尚未公证。
 
 电台目录：[Radio Browser](https://www.radio-browser.info/) · 体验灵感：[RoamDial](https://roamdial.com/about.html)
 
@@ -20,13 +20,15 @@ iOS 专用界面位于 `App/iOS`，Xcode 工程为 `iOS/MiniRadio.xcodeproj`，�
 
 ## 收藏与收听同步
 
-macOS 在播放器的更多菜单或菜单栏面板的更多菜单中打开“收藏与收听同步”；iOS 在首页右上角更多菜单中打开。在两台设备填写相同的 HTTPS 服务地址和密钥，点击“保存并启用同步”。密钥保存在设备系统钥匙串，不写入源码、普通偏好文件或请求地址。服务地址由用户设置，不包含在公开构建中。
+macOS 在播放器的更多菜单或菜单栏面板的更多菜单中打开“收藏与收听同步”；iOS 在首页右上角更多菜单中打开。可在 [radio.myaichatbox.com](https://radio.myaichatbox.com) 生成随机同步密钥，再在各台设备填写相同服务地址和密钥，点击“保存并启用同步”。默认服务地址已填入，也可以修改。密钥保存在系统钥匙串，不写入源码、普通偏好文件或请求地址；持有者可访问并删除空间，请私下保存，丢失后无法找回。
 
 同步默认关闭。开启后，收藏变更会在约一秒后同步；应用前台使用期间每分钟同步，回到应用时也会同步，也可点击“立即同步”。macOS 应用仍在菜单栏运行时继续检查更新。网络失败先保留本机修改，后续自动重试；停用同步保留本机和服务端已有数据。
 
 同步范围为收藏、取消收藏记录、最近 50 个收听电台及其时间、最后收听电台。合并不会切换正在播放的电台，也不共享音量、睡眠定时或窗口偏好。收听记录在成功开始播放后产生；旧版本本地数据自动迁移，历史时间未知的旧记录优先级低于新修改。取消收藏会保留删除记录，避免离线设备把旧收藏恢复回来。两端设备的系统时间应保持准确。
 
-客户端接口已实现；服务端不包含在本项目中，部署并联调前不能视为跨设备同步已验收。服务未部署、密钥无效或返回格式错误时，设置页面会显示状态，本地收藏与播放仍然可用。
+同步服务位于 `server/`，使用 Node.js 26+ 内置 HTTP/SQLite，无第三方运行时依赖。通过 HTTPS 传输，服务端 AES-GCM 加密存储数据、只保存同步密钥摘要；服务端持有存储密钥，具备解密能力。网页支持撤销密钥和删除云端数据；加密备份最多保留 7 天。错误时保留本机收藏与播放。
+
+服务测试：`node --test server/sync.test.mjs`。启动前设置 `SYNC_DATABASE` 和 `SYNC_MASTER_KEY_FILE`（32 字节随机二进制存储密钥文件），然后运行 `node server/index.mjs`，默认监听回环地址。生产配置、主密钥、数据库与备份保持私有，不提交到仓库。备份入口为 `node server/backup.mjs`，另需设置 `SYNC_BACKUP_DIRECTORY`。更换或遗失主密钥会导致已有数据库无法解密。
 
 ## 同步服务接口约定
 

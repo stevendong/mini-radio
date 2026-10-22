@@ -17,8 +17,8 @@ if [[ "$mode" == device ]]; then
     -jobs 2 CODE_SIGNING_ALLOWED=NO build
   mkdir -p artifacts/ios-package/Payload
   ditto artifacts/ios-device/Build/Products/Release-iphoneos/MiniRadio.app artifacts/ios-package/Payload/MiniRadio.app
-  (cd artifacts/ios-package && ditto -c -k --keepParent Payload ../MiniRadio-iOS-0.2.0-unsigned.ipa)
-  (cd artifacts && shasum -a 256 MiniRadio-iOS-0.2.0-unsigned.ipa > iOS-SHA256SUMS)
+  (cd artifacts/ios-package && ditto -c -k --keepParent Payload ../MiniRadio-iOS-0.2.1-unsigned.ipa)
+  (cd artifacts && shasum -a 256 MiniRadio-iOS-0.2.1-unsigned.ipa > iOS-SHA256SUMS)
 elif [[ "$mode" == simulator ]]; then
   xcodebuild -project iOS/MiniRadio.xcodeproj -scheme MiniRadio-iOS -configuration Debug \
     -destination 'generic/platform=iOS Simulator' -derivedDataPath artifacts/ios-simulator -jobs 2 build

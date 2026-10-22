@@ -1,0 +1,15 @@
+name: Sync service tests
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+      - run: python3 scripts/check-public.py
+      - run: node --test server/sync.test.mjs
