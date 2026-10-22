@@ -59,6 +59,7 @@ def config_list(name, base):
         if name == "project":
             values.update(SWIFT_OPTIMIZATION_LEVEL="-Onone" if mode == "Debug" else "-O",
                           DEBUG_INFORMATION_FORMAT="dwarf" if mode == "Debug" else "dwarf-with-dsym",
+                          ONLY_ACTIVE_ARCH="YES" if mode == "Debug" else "NO",
                           SWIFT_ACTIVE_COMPILATION_CONDITIONS="DEBUG" if mode == "Debug" else "")
         configs.append(add(name + mode, f"isa = XCBuildConfiguration; buildSettings = {settings(values)}; name = {mode};"))
     return add(name + "-config-list", f"isa = XCConfigurationList; buildConfigurations = {arr(configs)}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;")
