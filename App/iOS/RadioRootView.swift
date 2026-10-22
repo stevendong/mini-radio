@@ -73,7 +73,12 @@ struct StationBrowser: View {
                         Text("一段旋律，一种语言，一扇通往远方的小窗。")
                             .font(.subheadline).foregroundStyle(.secondary)
                         Button { model.randomNext() } label: {
-                            Label("随心漫游", systemImage: "shuffle").font(.subheadline.weight(.semibold))
+                            Label {
+                                Text("随心漫游").foregroundStyle(.white)
+                            } icon: {
+                                Image(systemName: "shuffle").foregroundStyle(.white)
+                            }
+                                .font(.subheadline.weight(.semibold))
                                 .frame(maxWidth: .infinity).padding(.vertical, 5)
                         }.buttonStyle(.borderedProminent).accessibilityIdentifier("discover-shuffle")
                     }.padding(.vertical, 12)
