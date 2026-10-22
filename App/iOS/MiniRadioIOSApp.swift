@@ -30,7 +30,9 @@ struct MiniRadioIOSApp: App {
         WindowGroup {
             RadioRootView(model: model, playback: model.playback)
                 .tint(Color(red: 0.76, green: 0.34, blue: 0.12))
+                .onAppear { model.sync.setActive(phase == .active) }
                 .onChange(of: phase) { value in
+                    model.sync.setActive(value == .active)
                     if value == .active, let deadline = model.playback.sleepDeadline, deadline <= Date() {
                         model.playback.stop()
                     }

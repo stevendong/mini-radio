@@ -156,6 +156,7 @@ struct StatusBarPanel: View {
                         showWindow("player")
                     }
                     Button("刷新电台目录") { model.search() }
+                    Button("收藏与收听同步…") { showWindow("sync") }
                     Button("数据来源与隐私") { showWindow("privacy") }
                     Divider()
                     Button("退出 Mini Radio") { NSApplication.shared.terminate(nil) }

@@ -8,6 +8,7 @@ struct RadioRootView: View {
     @State private var adding = false
     @State private var privacy = false
     @State private var filters = false
+    @State private var syncing = false
 
     var body: some View {
         TabView(selection: $model.tab) {
@@ -24,6 +25,8 @@ struct RadioRootView: View {
                                 Menu {
                                     Button { filters = true } label: { Label("筛选电台", systemImage: "line.3.horizontal.decrease.circle") }
                                     Button { model.search() } label: { Label("刷新目录", systemImage: "arrow.clockwise") }
+                                    Button { syncing = true } label: { Label("收藏与收听同步", systemImage: "arrow.triangle.2.circlepath") }
+                                        .accessibilityIdentifier("library-sync")
                                     Button { privacy = true } label: { Label("数据来源与隐私", systemImage: "hand.raised") }
                                 } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("更多选项")
                             }
@@ -44,6 +47,16 @@ struct RadioRootView: View {
         .sheet(isPresented: $adding) { AddRadioView(model: model) }
         .sheet(isPresented: $privacy) { IOSPrivacyView() }
         .sheet(isPresented: $filters) { RadioFiltersView(model: model) }
+        .sheet(isPresented: $syncing) {
+            NavigationStack {
+                LibrarySyncView(sync: model.sync)
+                    .navigationTitle("收藏与收听同步")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("完成") { syncing = false } }
+                    }
+            }
+        }
     }
 
     private func icon(_ tab: RadioModel.Tab) -> String {

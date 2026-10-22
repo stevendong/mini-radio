@@ -9,7 +9,7 @@ struct MiniRadioApp: App {
     var body: some Scene {
         Window("Mini Radio", id: "player") {
             PlayerView(model: model, playback: model.playback)
-                .onAppear { delegate.model = model }
+                .onAppear { delegate.model = model; model.sync.setActive(true) }
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
@@ -25,6 +25,8 @@ struct MiniRadioApp: App {
         }
         Window("数据来源与隐私", id: "privacy") { PrivacyView() }
             .windowResizability(.contentSize)
+        Window("收藏与收听同步", id: "sync") { LibrarySyncView(sync: model.sync) }
+            .windowResizability(.contentSize)
         MenuBarExtra {
             StatusBarPanel(model: model, playback: model.playback)
         } label: {
@@ -38,7 +40,11 @@ struct MiniRadioApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var model: RadioModel?
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
-    func applicationWillTerminate(_ notification: Notification) { model?.playback.shutdown() }
+    func applicationWillTerminate(_ notification: Notification) {
+        model?.sync.setActive(false)
+        model?.playback.shutdown()
+    }
+    func applicationDidBecomeActive(_ notification: Notification) { model?.sync.synchronize() }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard CommandLine.arguments.contains("--smoke-test") else { return }

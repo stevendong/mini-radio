@@ -20,6 +20,7 @@ final class RadioModel: ObservableObject {
         didSet { UserDefaults.standard.set(pinned, forKey: "pinned") }
     }
     let playback = PlaybackController()
+    let sync: LibrarySyncController
     private let directory = RadioDirectory()
     private let store: LibraryStore
     private var searchTask: Task<Void, Never>?
@@ -29,6 +30,7 @@ final class RadioModel: ObservableObject {
     private var maySaveLibrary = true
 
     init(automaticallyLoad: Bool = true, storageDirectory: URL? = nil) {
+        sync = LibrarySyncController(available: storageDirectory == nil)
         let base = storageDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MiniRadio", isDirectory: true)
         store = LibraryStore(directory: base)
@@ -43,6 +45,21 @@ final class RadioModel: ObservableObject {
             self.library.recordSuccessfulPlayback(station); self.save()
         }
         playback.onNext = { [weak self] in self?.randomNext() }
+        sync.snapshot = { [weak self] in
+            guard let self, self.maySaveLibrary, self.storageError == nil else {
+                throw SyncServiceError.localStorageUnavailable
+            }
+            return LibrarySyncDocument(library: self.library)
+        }
+        sync.receive = { [weak self] document in
+            guard let self, self.maySaveLibrary else { throw SyncServiceError.localStorageUnavailable }
+            var merged = self.library
+            merged.merge(document)
+            try self.store.save(merged)
+            self.library = merged
+            self.storageError = nil
+            if self.playback.station == nil { self.playback.restore(merged.lastStation) }
+        }
         loadCache()
         if automaticallyLoad { search() }
     }
@@ -58,7 +75,7 @@ final class RadioModel: ObservableObject {
     func addManual(name: String, address: String) -> Bool {
         guard let station = Station.manual(name: name, address: address) else { return false }
         if let existing = library.favorites.first(where: { $0.url == station.url }) { select(existing); return true }
-        library.favorites.insert(station, at: 0); save(); select(station); return true
+        library.setFavorite(station, enabled: true); save(); select(station); return true
     }
 
     func randomNext() {
@@ -128,7 +145,7 @@ final class RadioModel: ObservableObject {
 
     private func save() {
         guard maySaveLibrary else { return }
-        do { try store.save(library); storageError = nil }
+        do { try store.save(library); storageError = nil; sync.localDataChanged() }
         catch { storageError = "收藏保存失败：\(error.localizedDescription)" }
     }
 

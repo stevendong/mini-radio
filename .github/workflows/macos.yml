@@ -45,9 +45,9 @@ jobs:
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
-          name: MiniRadio-0.1.1-universal
+          name: MiniRadio-0.2.0-universal
           path: |
-            artifacts/MiniRadio-0.1.1-universal.zip
+            artifacts/MiniRadio-0.2.0-universal.zip
             artifacts/SHA256SUMS
             artifacts/launch-smoke.png
             artifacts/build.log
@@ -62,7 +62,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8.0.2
         with:
-          name: MiniRadio-0.1.1-universal
+          name: MiniRadio-0.2.0-universal
           path: artifacts
       - name: Publish test package
         env:
@@ -70,4 +70,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" artifacts/MiniRadio-0.1.1-universal.zip artifacts/SHA256SUMS --prerelease --title "Mini Radio $RELEASE_TAG preview" --notes 'Native macOS 13+ radio preview for Apple Silicon and Intel. Ad-hoc signed; not notarized. UI/audio acceptance on a real Mac remains required.'
+          gh release create "$RELEASE_TAG" artifacts/MiniRadio-0.2.0-universal.zip artifacts/SHA256SUMS --prerelease --title "Mini Radio $RELEASE_TAG preview" --notes 'Native macOS 13+ radio preview for Apple Silicon and Intel. Ad-hoc signed; not notarized. UI/audio acceptance on a real Mac remains required.'

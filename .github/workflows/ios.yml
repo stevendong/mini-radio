@@ -68,9 +68,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: MiniRadio-iOS-0.1.0
+          name: MiniRadio-iOS-0.2.0
           path: |
-            artifacts/MiniRadio-iOS-0.1.0-unsigned.ipa
+            artifacts/MiniRadio-iOS-0.2.0-unsigned.ipa
             artifacts/iOS-SHA256SUMS
             artifacts/ios-build.log
             artifacts/ios-tests.log

@@ -79,8 +79,9 @@ struct IOSPrivacyView: View {
         NavigationStack {
             List {
                 Section("只为收听") {
-                    Text("收藏、最近收听和偏好保存在本机。无需账号，不申请麦克风或定位权限，不接入广告或行为分析 SDK。")
-                    Text("如果你开启了系统备份，本地应用数据可能随设备备份迁移。应用没有自行运营的云同步服务。")
+                    Text("收藏、最近收听和偏好默认保存在本机。可选用服务地址和同步密钥合并收藏与收听记录。不申请麦克风或定位权限，不接入广告或行为分析 SDK。")
+                    Text("开启同步后，收藏、取消收藏记录、电台地址、最近 50 个收听电台及时间会发送到你设置的服务。密钥保存在系统钥匙串，停用同步保留本机和服务端已有数据。未开启同步时不会上传这些数据。")
+                    Text("如果你开启了系统备份，本地应用数据也可能随设备备份迁移。")
                 }
                 Section("网络连接") {
                     Text("电台目录与搜索请求发送给 Radio Browser。主动选台按目录服务约定提交电台标识用于点击计数。")
@@ -91,7 +92,7 @@ struct IOSPrivacyView: View {
                     Link("开源代码", destination: URL(string: "https://github.com/stevendong/mini-radio")!)
                     Link("Radio Browser", destination: URL(string: "https://www.radio-browser.info/")!)
                     Link("体验灵感：RoamDial", destination: URL(string: "https://roamdial.com/about.html")!)
-                    Text("Mini Radio · iOS 0.1.0").foregroundStyle(.secondary)
+                    Text("Mini Radio · iOS 0.2.0").foregroundStyle(.secondary)
                 }
             }.navigationTitle("数据来源与隐私").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }

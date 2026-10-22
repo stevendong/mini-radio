@@ -29,6 +29,7 @@ struct PlayerView: View {
                         }
                         Button("停止播放") { playback.stop() }
                         Divider()
+                        Button("收藏与收听同步…") { openWindow(id: "sync") }
                         Button("数据来源与隐私") { openWindow(id: "privacy") }
                         Button("退出 Mini Radio") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
                     } label: { Image(systemName: "ellipsis.circle") }
@@ -229,12 +230,13 @@ struct PrivacyView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("Mini Radio", systemImage: "radio").font(.title2.weight(.semibold))
-            Text("收藏、最近收听与偏好保存在本机。应用不要求账号，不申请麦克风权限，不接入广告或行为分析 SDK。")
+            Text("收藏、最近收听与偏好默认保存在本机。可选用自有服务和同步密钥合并收藏与收听记录。不开启同步时不会上传这些数据。应用不申请麦克风权限，不接入广告或行为分析 SDK。")
+            Text("开启同步后，收藏、取消收藏记录、电台地址、最近 50 个收听电台及时间会发送到你设置的服务。密钥保存在系统钥匙串。停用同步不会删除本机或服务端数据。")
             Text("电台目录与搜索请求发送给 Radio Browser；主动选台会按目录服务约定上报电台标识用于点击计数。直播音频直接连接电台服务器，相关服务能看到你的 IP 地址。部分电台使用未加密 HTTP。")
             Text("目录健康状态不代表当前网络一定可播。离线时可以查看本地收藏和缓存，直播仍然需要网络。")
             Link("Radio Browser", destination: URL(string: "https://www.radio-browser.info/")!)
             Link("体验灵感：RoamDial", destination: URL(string: "https://roamdial.com/about.html")!)
-            Text("0.1.1 · 原生 macOS 小收音机").font(.caption).foregroundStyle(.secondary)
+            Text("0.2.0 · 原生 macOS 小收音机").font(.caption).foregroundStyle(.secondary)
         }.font(.system(size: 13)).padding(28).frame(width: 440)
     }
 }

@@ -4,18 +4,30 @@ public struct Library: Codable, Sendable {
     public var favorites: [Station] = []
     public var recent: [Station] = []
     public var lastStation: Station?
+    public var syncState: LibrarySyncState?
     public init() {}
 
-    public mutating func toggleFavorite(_ station: Station) {
-        if favorites.contains(where: { $0.id == station.id }) { favorites.removeAll { $0.id == station.id } }
-        else { favorites.insert(station, at: 0) }
+    public mutating func toggleFavorite(_ station: Station, at date: Date = Date()) {
+        setFavorite(station, enabled: !favorites.contains { $0.id == station.id }, at: date)
     }
 
-    public mutating func recordSuccessfulPlayback(_ station: Station) {
+    public mutating func setFavorite(_ station: Station, enabled: Bool, at date: Date = Date()) {
+        prepareForSync()
+        syncState?.favorites[station.id] = FavoriteChange(station: station, modifiedAt: date, removed: !enabled)
+        favorites.removeAll { $0.id == station.id }
+        if enabled { favorites.insert(station, at: 0) }
+    }
+
+    public mutating func recordSuccessfulPlayback(_ station: Station, at date: Date = Date()) {
+        prepareForSync()
+        syncState?.history[station.id] = ListeningRecord(station: station, listenedAt: date)
         recent.removeAll { $0.id == station.id }
         recent.insert(station, at: 0)
         recent = Array(recent.prefix(50))
         lastStation = station
+        let retained = Set(recent.map(\.id))
+        let history = syncState?.history.filter { retained.contains($0.key) } ?? [:]
+        syncState?.history = history
     }
 }
 
