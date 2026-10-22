@@ -26,16 +26,33 @@ jobs:
       - name: Select simulators
         run: |
           xcrun simctl list devices available -j > artifacts/simulators.json
+          export SIM_SDK_VERSION="$(xcrun --sdk iphonesimulator --show-sdk-version)"
           python3 - <<'PY'
-          import json, os
+          import json, os, re
           devices = json.load(open('artifacts/simulators.json'))['devices']
-          available = [d for runtime in sorted(devices, reverse=True) if '.iOS-' in runtime for d in devices[runtime]]
+          sdk = tuple(int(p) for p in os.environ['SIM_SDK_VERSION'].split('.')[:2])
+          compatible = []
+          for runtime, entries in devices.items():
+              match = re.search(r'\.iOS-(\d+)-(\d+)', runtime)
+              if match:
+                  version = tuple(map(int, match.groups()))
+                  if version <= sdk and entries:
+                      compatible.append((version, entries))
+          if not compatible:
+              raise SystemExit('No available iOS simulator compatible with the selected Xcode SDK')
+          version, available = max(compatible, key=lambda item: item[0])
+          print('SDK', os.environ['SIM_SDK_VERSION'], 'simulator runtime', version)
           with open(os.environ['GITHUB_ENV'], 'a') as env:
               for label, prefix in [('PHONE', 'iPhone'), ('TABLET', 'iPad')]:
                   device = next(d for d in available if d['name'].startswith(prefix))
                   env.write(label + '_UDID=' + device['udid'] + '\n')
                   print(label, device['name'])
           PY
+      - name: Boot iPhone simulator
+        timeout-minutes: 6
+        run: |
+          xcrun simctl boot "$PHONE_UDID" || true
+          xcrun simctl bootstatus "$PHONE_UDID" -b
       - name: iPhone UI and local audio tests
         timeout-minutes: 12
         run: |
@@ -48,8 +65,10 @@ jobs:
             -resultBundlePath artifacts/iPhone-Tests.xcresult -parallel-testing-enabled NO -jobs 2 test \
             2>&1 | tee artifacts/ios-tests.log
       - name: iPad layout test
-        timeout-minutes: 6
+        timeout-minutes: 8
         run: |
+          xcrun simctl boot "$TABLET_UDID" || true
+          xcrun simctl bootstatus "$TABLET_UDID" -b
           set -o pipefail
           xcodebuild -project iOS/MiniRadio.xcodeproj -scheme MiniRadio-iOS -configuration Debug \
             -destination "platform=iOS Simulator,id=$TABLET_UDID" -derivedDataPath artifacts/ios-simulator \
@@ -58,6 +77,7 @@ jobs:
             2>&1 | tee artifacts/ipad-tests.log
       - name: Export screenshots
         if: always()
+        timeout-minutes: 2
         run: |
           for device in iPhone iPad; do
             result="artifacts/$device-Tests.xcresult"
@@ -89,6 +109,7 @@ jobs:
             artifacts/ios-build.log
             artifacts/ios-tests.log
             artifacts/ipad-tests.log
+            artifacts/ios-test-server.log
             artifacts/iPhone-screenshots
             artifacts/iPad-screenshots
             iOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png

@@ -32,7 +32,7 @@ final class MiniRadioUITests: XCTestCase {
         app.buttons["open-player"].tap()
         let status = app.descendants(matching: .any)["player-status"].firstMatch
         let playing = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "正在直播"), object: status)
-        XCTAssertEqual(XCTWaiter.wait(for: [playing], timeout: 25), .completed)
+        XCTAssertEqual(XCTWaiter.wait(for: [playing], timeout: 25), .completed, "AVPlayer status: \(status.label)")
         capture("NowPlaying-local-audio")
         app.buttons["player-play"].tap()
         XCTAssertTrue(app.staticTexts["已暂停"].waitForExistence(timeout: 5))
