@@ -28,11 +28,15 @@ final class MiniRadioUITests: XCTestCase {
     }
 
     func testSyncSettingsOfferPrivateKeySetup() {
-        app.buttons["更多选项"].tap()
+        let more = app.buttons["更多选项"].firstMatch
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        // SwiftUI Menu can reject XCTest's scroll-to-visible action on an already visible toolbar.
+        more.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         app.buttons["library-sync"].tap()
         XCTAssertTrue(app.textFields["sync-server"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.secureTextFields["sync-key"].exists)
-        XCTAssertTrue(app.links["生成或管理同步密钥"].exists)
+        let management = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "生成或管理同步密钥")).firstMatch
+        XCTAssertTrue(management.waitForExistence(timeout: 5))
         capture("Sync-settings")
         app.buttons["完成"].tap()
         XCTAssertTrue(app.buttons["station-ui-jazz"].waitForExistence(timeout: 5))
