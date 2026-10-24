@@ -62,12 +62,15 @@ final class PreloadPlaybackTests: XCTestCase {
 
         environment.update(PreloadConditions(externalPower: true, wifi: true))
         try await waitFor("Ready before filter change", { playback.preparedPlayer?.timeControlStatus == .playing })
+        model.library.setFavorite(a, enabled: true)
+        model.tab = .favorites
         let filtered = try XCTUnwrap(playback.preparedPlayer)
         model.query = StationQuery(name: "no matching station")
         XCTAssertNil(playback.preparedPlayer)
         XCTAssertNil(filtered.currentItem)
         model.query = StationQuery()
         try await waitFor("Clearing a filter can prepare the same candidate again", { playback.preparedPlayer?.timeControlStatus == .playing })
+        model.tab = .discover
 
         let bad = Station(id: "test-bad", name: "Unavailable", url: stream.replacingOccurrences(of: "tone.wav", with: "missing.wav"))
         model.stations = [b, bad]

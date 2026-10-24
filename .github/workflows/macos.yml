@@ -25,6 +25,8 @@ jobs:
           node-version: '26'
       - name: Core and two-device sync integration tests
         run: |
+          mkdir -p artifacts
+          set -o pipefail
           openssl rand 32 > "$RUNNER_TEMP/sync.key"
           SYNC_DATABASE="$RUNNER_TEMP/sync.sqlite" SYNC_MASTER_KEY_FILE="$RUNNER_TEMP/sync.key" \
             node server/admin.mjs invite --count 2 --out "$RUNNER_TEMP/sync-invitations.json"
@@ -39,21 +41,24 @@ jobs:
           done
           MINIRADIO_SYNC_TEST_URL=http://127.0.0.1:18768 \
             MINIRADIO_PLAYBACK_TEST_URL=http://127.0.0.1:18767/tone.wav \
-            MINIRADIO_SYNC_TEST_INVITES_FILE="$RUNNER_TEMP/sync-invitations.json" swift test --jobs 2
+            MINIRADIO_SYNC_TEST_INVITES_FILE="$RUNNER_TEMP/sync-invitations.json" swift test --jobs 2 2>&1 | tee artifacts/core-tests.log
       - name: Build universal application
         run: |
           mkdir -p artifacts
           set -o pipefail
           bash scripts/build-macos.sh 2>&1 | tee artifacts/build.log
-      - name: Report packaging errors
+      - name: Report test or packaging errors
         if: failure()
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('artifacts/build.log')
-          if p.exists():
-              tail = p.read_text()[-6000:]
-              print('::error::' + tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          for name in ['core-tests.log', 'build.log']:
+              p = Path('artifacts') / name
+              if p.exists():
+                  lines = p.read_text(errors='replace').splitlines()
+                  useful = [line for line in lines if 'error:' in line.lower() or 'failed' in line.lower() or 'XCTAssert' in line]
+                  tail = (name + '\n' + '\n'.join(useful[-20:] or lines[-12:]))[-6000:]
+                  print('::error::' + tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
           PY
       - name: Launch probe
         continue-on-error: true
@@ -70,6 +75,7 @@ jobs:
             artifacts/SHA256SUMS
             artifacts/launch-smoke.png
             artifacts/build.log
+            artifacts/core-tests.log
           if-no-files-found: error
           retention-days: 30
   preview:
