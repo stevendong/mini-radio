@@ -147,7 +147,7 @@ final class PlaybackController: ObservableObject {
     func prepare(_ station: Station?) {
         guard canPreload, let station, station.id != self.station?.id,
               let url = station.streamURLs.first else {
-            cancelPreload(); return
+            cancelPreload(); attemptedPreload = nil; return
         }
         if preparedStation == station || attemptedPreload == station { return }
         cancelPreload()

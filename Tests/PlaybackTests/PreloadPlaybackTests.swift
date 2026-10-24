@@ -61,6 +61,20 @@ final class PreloadPlaybackTests: XCTestCase {
         XCTAssertEqual(playback.status, .playing)
 
         environment.update(PreloadConditions(externalPower: true, wifi: true))
+        try await waitFor("Ready before filter change", { playback.preparedPlayer?.timeControlStatus == .playing })
+        let filtered = try XCTUnwrap(playback.preparedPlayer)
+        model.query = StationQuery(name: "no matching station")
+        XCTAssertNil(playback.preparedPlayer)
+        XCTAssertNil(filtered.currentItem)
+        model.query = StationQuery()
+        try await waitFor("Clearing a filter can prepare the same candidate again", { playback.preparedPlayer?.timeControlStatus == .playing })
+
+        let bad = Station(id: "test-bad", name: "Unavailable", url: stream.replacingOccurrences(of: "tone.wav", with: "missing.wav"))
+        model.stations = [b, bad]
+        try await waitFor("Failed preload is released", { playback.preparedPlayer == nil })
+        XCTAssertEqual(playback.station?.id, b.id)
+        XCTAssertEqual(playback.status, .playing)
+        model.stations = [a, b]
         try await waitFor("Ready before pause", { playback.preparedPlayer?.timeControlStatus == .playing })
         let paused = try XCTUnwrap(playback.preparedPlayer)
         playback.pause()
@@ -70,6 +84,9 @@ final class PreloadPlaybackTests: XCTestCase {
         XCTAssertEqual(playback.status, .paused)
         playback.resume()
         try await waitFor("Resume prepares again", { playback.preparedPlayer?.timeControlStatus == .playing })
+        model.randomNext()
+        model.randomNext()
+        try await waitFor("Rapid skips keep the last selection", { playback.station?.id == b.id && playback.status == .playing })
         playback.stop()
         XCTAssertNil(playback.player)
         XCTAssertNil(playback.preparedPlayer)
