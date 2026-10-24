@@ -66,7 +66,7 @@ def config_list(name, base):
 
 project_configs = config_list("project", {"CLANG_ENABLE_MODULES": "YES", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SDKROOT": "iphoneos", "SWIFT_VERSION": "5.0"})
 app_configs = config_list("app", {"PRODUCT_BUNDLE_IDENTIFIER": "com.stevendong.miniradio.ios", "PRODUCT_NAME": "MiniRadio",
-    "INFOPLIST_FILE": "Info.plist", "MARKETING_VERSION": "0.3.0", "CURRENT_PROJECT_VERSION": "4", "TARGETED_DEVICE_FAMILY": "1,2",
+    "INFOPLIST_FILE": "Info.plist", "MARKETING_VERSION": "0.3.1", "CURRENT_PROJECT_VERSION": "5", "TARGETED_DEVICE_FAMILY": "1,2",
     "CODE_SIGN_STYLE": "Automatic", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
     "CARPLAY_ENTITLEMENTS": "", "CODE_SIGN_ENTITLEMENTS": "$(CARPLAY_ENTITLEMENTS)",
     "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": "MiniRadio-CarPlay.entitlements",

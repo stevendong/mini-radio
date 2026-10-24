@@ -6,10 +6,10 @@ import RadioCore
 @MainActor
 final class RadioModel: ObservableObject {
     enum Tab: String, CaseIterable { case discover = "发现", favorites = "收藏", recent = "最近" }
-    @Published var library = Library()
-    @Published var stations: [Station] = []
-    @Published var tab: Tab = .discover
-    @Published var query = StationQuery()
+    @Published var library = Library() { didSet { refreshPreload() } }
+    @Published var stations: [Station] = [] { didSet { refreshPreload() } }
+    @Published var tab: Tab = .discover { didSet { refreshPreload() } }
+    @Published var query = StationQuery() { didSet { refreshPreload() } }
     @Published var loading = false
     @Published var canLoadMore = true
     @Published var notice: String?
@@ -19,7 +19,7 @@ final class RadioModel: ObservableObject {
     @Published var pinned = UserDefaults.standard.bool(forKey: "pinned") {
         didSet { UserDefaults.standard.set(pinned, forKey: "pinned") }
     }
-    let playback = PlaybackController()
+    let playback: PlaybackController
     let sync: LibrarySyncController
     private let directory = RadioDirectory()
     private let store: LibraryStore
@@ -29,8 +29,10 @@ final class RadioModel: ObservableObject {
     private var recentRandom: [String] = []
     private var maySaveLibrary = true
     private var playbackTab: Tab?
+    private var randomPlan = RandomStationPlan()
 
-    init(automaticallyLoad: Bool = true, storageDirectory: URL? = nil) {
+    init(automaticallyLoad: Bool = true, storageDirectory: URL? = nil, playback providedPlayback: PlaybackController? = nil) {
+        self.playback = providedPlayback ?? PlaybackController()
         sync = LibrarySyncController(available: storageDirectory == nil)
         let base = storageDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MiniRadio", isDirectory: true)
@@ -41,6 +43,7 @@ final class RadioModel: ObservableObject {
             storageError = "收藏文件读取失败，已保留原文件。本次收藏修改不会覆盖它。"
         }
         playback.restore(library.lastStation)
+        playback.onPreloadOpportunity = { [weak self] in self?.refreshPreload() }
         playback.onSuccessfulPlayback = { [weak self] station in
             guard let self else { return }
             self.library.recordSuccessfulPlayback(station); self.save()
@@ -69,9 +72,10 @@ final class RadioModel: ObservableObject {
         if automaticallyLoad { search() }
     }
 
-    func select(_ station: Station, from tab: Tab? = nil) {
+    func select(_ station: Station, from tab: Tab? = nil, usePreloaded: Bool = false) {
         playbackTab = tab
-        playback.play(station)
+        randomPlan.clear()
+        playback.play(station, usePreloaded: usePreloaded)
         Task { await directory.recordSelection(station) }
     }
 
@@ -101,12 +105,26 @@ final class RadioModel: ObservableObject {
     }
 
     private func randomNext(in source: [Station], tab: Tab?) {
-        let candidates = source.filter { $0.id != playback.station?.id && !recentRandom.contains($0.id) }
-        let fallback = source.filter { $0.id != playback.station?.id }
-        guard let next = (candidates.isEmpty ? fallback : candidates).randomElement() ?? source.first else {
+        guard let next = randomPlan.next(in: source, currentID: playback.station?.id,
+                                         recentIDs: recentRandom, context: randomContext(tab)) else {
             expanded = true; notice = "当前列表还没有电台，请搜索或手动添加。"; return
         }
-        recentRandom.append(next.id); recentRandom = Array(recentRandom.suffix(15)); select(next, from: tab)
+        recentRandom.append(next.id); recentRandom = Array(recentRandom.suffix(15))
+        select(next, from: tab, usePreloaded: true)
+    }
+
+    private func randomContext(_ sourceTab: Tab?) -> String {
+        sourceTab.map { "source:\($0.rawValue)" } ?? "visible:\(tab.rawValue)"
+    }
+
+    private func refreshPreload() {
+        guard playback.canPreload else {
+            randomPlan.clear(); playback.prepare(nil); return
+        }
+        let source = playbackTab.map { stations(for: $0) } ?? visibleStations
+        let next = randomPlan.prepare(in: source, currentID: playback.station?.id,
+                                      recentIDs: recentRandom, context: randomContext(playbackTab))
+        playback.prepare(next)
     }
 
     var visibleStations: [Station] {

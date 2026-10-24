@@ -24,15 +24,30 @@ final class PlaybackController: ObservableObject {
     }
 
     @Published private(set) var station: Station?
-    @Published private(set) var status: Status = .idle
+    @Published private(set) var status: Status = .idle {
+        didSet {
+            if status != .playing { cancelPreload(); attemptedPreload = nil }
+            if status != oldValue { onPreloadOpportunity?() }
+        }
+    }
     @Published var volume: Double = 0.65 {
         didSet { player?.volume = Float(volume); UserDefaults.standard.set(volume, forKey: "volume") }
     }
     @Published private(set) var sleepDeadline: Date?
     var onSuccessfulPlayback: ((Station) -> Void)?
     var onNext: (() -> Void)?
+    var onPreloadOpportunity: (() -> Void)?
+    let environment: PreloadEnvironment
+    private(set) var preparedStation: Station?
+    private(set) var preparedPlayer: AVPlayer?
+    private var preloadGeneration = UUID()
+    private var preloadObservations: [NSKeyValueObservation] = []
+    private var preloadNotifications: [NSObjectProtocol] = []
+    private var preloadTimeout: Task<Void, Never>?
+    // A failed speculative connection is not retried until the user or conditions change.
+    private var attemptedPreload: Station?
 
-    private var player: AVPlayer?
+    private(set) var player: AVPlayer?
     private var observations: [NSKeyValueObservation] = []
     private var notifications: [NSObjectProtocol] = []
     private var policy = PlaybackSession()
@@ -61,7 +76,14 @@ final class PlaybackController: ObservableObject {
         switch status { case .playing, .connecting, .reconnecting: return true; default: return false }
     }
 
-    init() {
+    init(environment: PreloadEnvironment? = nil) {
+        self.environment = environment ?? PreloadEnvironment()
+        self.environment.onChange = { [weak self] in
+            guard let self else { return }
+            self.cancelPreload()
+            self.attemptedPreload = nil
+            self.onPreloadOpportunity?()
+        }
         #if os(iOS)
         volume = 1
         observeAudioSession()
@@ -91,7 +113,9 @@ final class PlaybackController: ObservableObject {
 
     func restore(_ station: Station?) { self.station = station; status = station == nil ? .idle : .paused }
 
-    func play(_ station: Station) {
+    func play(_ station: Station, usePreloaded: Bool = false) {
+        environment.refresh()
+        let prepared = usePreloaded ? takePreloaded(station) : nil
         #if os(iOS)
         interruption.userChangedPlayback()
         #endif
@@ -115,7 +139,76 @@ final class PlaybackController: ObservableObject {
             #endif
             updateNowPlaying(); return
         }
-        begin(ticket)
+        begin(ticket, using: prepared)
+    }
+
+    var canPreload: Bool { environment.conditions.allowsPreloading && status == .playing }
+
+    func prepare(_ station: Station?) {
+        guard canPreload, let station, station.id != self.station?.id,
+              let url = station.streamURLs.first else {
+            cancelPreload(); return
+        }
+        if preparedStation == station || attemptedPreload == station { return }
+        cancelPreload()
+        attemptedPreload = station
+        let generation = preloadGeneration
+        let item = AVPlayerItem(url: url)
+        let standby = AVPlayer(playerItem: item)
+        standby.isMuted = true
+        standby.automaticallyWaitsToMinimizeStalling = true
+        preparedStation = station
+        preparedPlayer = standby
+        preloadObservations.append(item.observe(\.status, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.checkPreload(generation) }
+        })
+        preloadObservations.append(standby.observe(\.timeControlStatus, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.checkPreload(generation) }
+        })
+        for name in [AVPlayerItem.failedToPlayToEndTimeNotification, AVPlayerItem.didPlayToEndTimeNotification] {
+            preloadNotifications.append(NotificationCenter.default.addObserver(forName: name, object: item, queue: .main) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self, self.preloadGeneration == generation else { return }
+                    self.cancelPreload()
+                }
+            })
+        }
+        // Keep the speculative stream advancing at the live edge, without audible output.
+        standby.play()
+        checkPreload(generation)
+    }
+
+    private func checkPreload(_ generation: UUID) {
+        guard generation == preloadGeneration, let standby = preparedPlayer else { return }
+        guard canPreload, standby.currentItem?.status != .failed else { cancelPreload(); return }
+        if standby.timeControlStatus == .playing {
+            preloadTimeout?.cancel(); preloadTimeout = nil
+        } else if preloadTimeout == nil {
+            preloadTimeout = Task { [weak self] in
+                do { try await Task.sleep(nanoseconds: 12_000_000_000) } catch { return }
+                guard let self, !Task.isCancelled, self.preloadGeneration == generation else { return }
+                self.cancelPreload()
+            }
+        }
+    }
+
+    private func takePreloaded(_ station: Station) -> AVPlayer? {
+        guard canPreload, preparedStation == station, let standby = preparedPlayer,
+              standby.currentItem?.status == .readyToPlay, standby.timeControlStatus == .playing else { return nil }
+        // Detach before invalidating the old playback session so its teardown cannot release this item.
+        preparedPlayer = nil
+        cancelPreload()
+        return standby
+    }
+
+    private func cancelPreload() {
+        preloadGeneration = UUID()
+        preloadTimeout?.cancel(); preloadTimeout = nil
+        preloadObservations.removeAll()
+        preloadNotifications.forEach { NotificationCenter.default.removeObserver($0) }
+        preloadNotifications.removeAll()
+        preparedPlayer?.pause(); preparedPlayer?.replaceCurrentItem(with: nil)
+        preparedPlayer = nil; preparedStation = nil
     }
 
     func toggle() { isActive ? pause() : resume() }
@@ -145,6 +238,7 @@ final class PlaybackController: ObservableObject {
 
     func shutdown() {
         stop()
+        environment.onChange = nil
         remoteTargets.forEach { $0.0.removeTarget($0.1) }
         remoteTargets.removeAll()
         #if os(iOS)
@@ -170,6 +264,8 @@ final class PlaybackController: ObservableObject {
     }
 
     private func invalidatePlayback() {
+        cancelPreload()
+        attemptedPreload = nil
         policy.cancel()
         retryTask?.cancel(); retryTask = nil
         teardownAttempt()
@@ -183,13 +279,14 @@ final class PlaybackController: ObservableObject {
         player?.pause(); player?.replaceCurrentItem(with: nil); player = nil
     }
 
-    private func begin(_ ticket: PlaybackSession.Ticket) {
+    private func begin(_ ticket: PlaybackSession.Ticket, using prepared: AVPlayer? = nil) {
         guard policy.accepts(ticket) else { return }
         teardownAttempt()
         status = ticket.attempt == 0 ? .connecting : .reconnecting(ticket.attempt)
-        let item = AVPlayerItem(url: ticket.url)
-        let newPlayer = AVPlayer(playerItem: item)
+        let item = prepared?.currentItem ?? AVPlayerItem(url: ticket.url)
+        let newPlayer = prepared ?? AVPlayer(playerItem: item)
         newPlayer.volume = Float(volume)
+        newPlayer.isMuted = false
         newPlayer.automaticallyWaitsToMinimizeStalling = true
         player = newPlayer
 

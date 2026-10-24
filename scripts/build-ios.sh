@@ -13,11 +13,11 @@ xcrun --sdk macosx swift -sdk "$mac_sdk" -target "$(uname -m)-apple-macosx13.0" 
 mode="${1:-device}"
 if [[ "$mode" == device || "$mode" == carplay ]]; then
   build_kind="ios-device"
-  package_name="MiniRadio-iOS-0.3.0-unsigned.ipa"
+  package_name="MiniRadio-iOS-0.3.1-unsigned.ipa"
   signing_options=(CARPLAY_ENTITLEMENTS=)
   if [[ "$mode" == carplay ]]; then
     build_kind="ios-carplay-device"
-    package_name="MiniRadio-iOS-0.3.0-CarPlay-unsigned.ipa"
+    package_name="MiniRadio-iOS-0.3.1-CarPlay-unsigned.ipa"
     signing_options=(CARPLAY_ENTITLEMENTS=MiniRadio-CarPlay.entitlements)
   fi
   xcodebuild -project iOS/MiniRadio.xcodeproj -scheme MiniRadio-iOS -configuration Release \

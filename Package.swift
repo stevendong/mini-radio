@@ -12,6 +12,7 @@ let package = Package(
         .target(name: "RadioCore"),
         .executableTarget(name: "RoamRadio", dependencies: ["RadioCore"], path: "App",
                           exclude: ["iOS"], sources: ["macOS", "Shared"]),
-        .testTarget(name: "RadioCoreTests", dependencies: ["RadioCore"])
+        .testTarget(name: "RadioCoreTests", dependencies: ["RadioCore"]),
+        .testTarget(name: "PlaybackTests", dependencies: ["RoamRadio"])
     ]
 )
