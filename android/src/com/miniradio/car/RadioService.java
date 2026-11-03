@@ -185,8 +185,9 @@ public final class RadioService extends MediaBrowserService {
 
     void pause() {
         wantsPlay = false; handler.removeCallbacks(timeout);
-        if (player != null && prepared) { try { player.pause(); } catch (IllegalStateException ignored) { } }
-        else releasePlayer();
+        // A live HLS window can expire while paused. Reconnect on explicit resume
+        // so playback rejoins the live edge instead of waiting on stale segments.
+        releasePlayer();
         abandonFocus(); state = PlaybackState.STATE_PAUSED; status = "已暂停";
         publish(); stopForeground(false);
     }
