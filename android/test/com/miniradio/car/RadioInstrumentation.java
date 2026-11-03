@@ -30,7 +30,7 @@ public final class RadioInstrumentation extends Instrumentation {
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
-            stationValidation(); libraryPersistence(); syncMerging(); secureCredentials(); mediaButtons(); mediaBrowser();
+            stationValidation(); libraryPersistence(); syncMerging(); secureCredentials(); mediaButtons(); stationQueues(); mediaBrowser();
             result.putString("stream", "PASS: " + checks + " Android assertions\n"); finish(-1, result);
         } catch (Throwable error) {
             result.putString("stream", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage() + "\n"); finish(0, result);
@@ -166,5 +166,32 @@ public final class RadioInstrumentation extends Instrumentation {
         check(MediaButtons.adjacentIndex(0, 3, -1) == 2 && MediaButtons.adjacentIndex(2, 3, 1) == 0, "Station queue wraps in both directions");
         check(MediaButtons.adjacentIndex(-1, 3, -1) == 2 && MediaButtons.adjacentIndex(-1, 3, 1) == 0, "Unlisted current station starts at correct queue edge");
         check(MediaButtons.adjacentIndex(0, 1, -1) == 0 && MediaButtons.adjacentIndex(-1, 0, 1) == -1, "Single and empty queues");
+    }
+    private void stationQueues() {
+        Station a = Station.manual("A", "https://example.com/a"), b = Station.manual("B", "https://example.com/b"),
+            c = Station.manual("C", "https://example.com/c"), favorite = Station.manual("Favorite", "https://example.com/favorite");
+        StationQueue queue = new StationQueue();
+        queue.update(StationQueue.FAVORITES, "", java.util.Arrays.asList(favorite));
+        check(queue.adjacent(a, 1).id.equals(favorite.id), "Favorite tab uses its own list");
+        queue.update(StationQueue.RECENT, "", java.util.Arrays.asList(a, b, c));
+        check(queue.adjacent(a, 1).id.equals(b.id) && queue.adjacent(b, -1).id.equals(a.id), "Recent next and previous use recent order");
+        queue.update(StationQueue.RECENT, "", java.util.Arrays.asList(b, a, c));
+        check(queue.adjacent(b, 1).id.equals(c.id), "Successful playback reordering does not bounce between two recent stations");
+        check(queue.stations.get(0).id.equals(a.id), "Visible recent queue retains traversal order");
+        queue.update(StationQueue.RECENT, "C", java.util.Arrays.asList(c));
+        check(queue.adjacent(a, 1).id.equals(c.id) && queue.stations.size() == 1, "Filtered queue never escapes visible results");
+        queue.update(StationQueue.FAVORITES, "", java.util.Arrays.asList(favorite));
+        queue.update(StationQueue.RECENT, "", java.util.Arrays.asList(b, a, c));
+        check(queue.stations.get(0).id.equals(b.id), "Re-entering recent tab refreshes listening order");
+        queue.update(StationQueue.FAVORITES, "missing", java.util.Collections.emptyList());
+        check(queue.adjacent(a, 1) == null, "Empty active list never falls back to another tab");
+        queue.update(StationQueue.DISCOVER, "", java.util.Arrays.asList(a, b, c));
+        check(queue.adjacent(a, -1).id.equals(c.id), "Discover previous follows discovery list");
+        for (int seed = 0; seed < 6; seed++) {
+            Station selected = StationQueue.random(queue.stations, a, new java.util.Random(seed));
+            check((selected.id.equals(b.id) || selected.id.equals(c.id)) && !selected.id.equals(favorite.id), "Roaming stays in discovery and avoids current station");
+        }
+        check(StationQueue.random(java.util.Collections.emptyList(), a, new java.util.Random(0)) == null, "Empty discovery does not roam favorites");
+        check(StationQueue.random(java.util.Arrays.asList(a), a, new java.util.Random(0)).id.equals(a.id), "Single discovery station remains playable");
     }
 }

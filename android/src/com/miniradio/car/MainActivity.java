@@ -66,6 +66,9 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);
+        android.content.SharedPreferences browsing = getSharedPreferences("radio-browsing", MODE_PRIVATE);
+        tab = browsing.getInt("tab", StationQueue.DISCOVER); query = browsing.getString("query", "");
+        country = browsing.getString("country", "");
         if (savedInstanceState != null) {
             tab = savedInstanceState.getInt("tab"); query = savedInstanceState.getString("query", "");
             country = savedInstanceState.getString("country", "");
@@ -212,6 +215,10 @@ public final class MainActivity extends Activity {
         List<Station> source = tab == 0 ? found : service == null ? new ArrayList<>() : tab == 1 ? service.store.favorites : service.store.recent;
         for (Station station : source) {
             if (tab == 0 || station.name.toLowerCase(java.util.Locale.ROOT).contains(query.toLowerCase(java.util.Locale.ROOT))) rows.add(station);
+        }
+        if (service != null) {
+            service.setBrowseContext(tab, query, country, rows);
+            rows.clear(); rows.addAll(service.queue.stations);
         }
         for (int i = 0; i < tabs.size(); i++) {
             tabs.get(i).setBackground(rounded(i == tab ? MINT : CARD, 16)); tabs.get(i).setTextColor(i == tab ? BG : WHITE);

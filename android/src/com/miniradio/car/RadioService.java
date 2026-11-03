@@ -32,6 +32,9 @@ public final class RadioService extends MediaBrowserService {
     RadioStore store;
     SyncController sync;
     final List<Station> directory = new ArrayList<>();
+    final StationQueue queue = new StationQueue();
+    private android.content.SharedPreferences browsing;
+    private String browseQuery, browseCountry;
     Station station;
     int state = PlaybackState.STATE_NONE, version;
     String status = "选择电台，听见远方";
@@ -61,8 +64,12 @@ public final class RadioService extends MediaBrowserService {
     @Override public void onCreate() {
         super.onCreate(); current = this;
         store = new RadioStore(this); station = store.last;
-        directory.addAll(store.cache("|"));
-        if (directory.isEmpty()) directory.addAll(RadioDirectory.starters("", ""));
+        browsing = getSharedPreferences("radio-browsing", MODE_PRIVATE);
+        queue.tab = browsing.getInt("tab", StationQueue.DISCOVER);
+        browseQuery = browsing.getString("query", ""); browseCountry = browsing.getString("country", "");
+        directory.addAll(store.cache(browseQuery + "|" + browseCountry));
+        if (directory.isEmpty()) directory.addAll(RadioDirectory.starters(browseQuery, browseCountry));
+        refreshQueue();
         audio = (AudioManager) getSystemService(AUDIO_SERVICE);
         AudioAttributes attributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build();
@@ -206,19 +213,36 @@ public final class RadioService extends MediaBrowserService {
     }
 
     void next(int direction) {
-        List<Station> list = !store.favorites.isEmpty() ? store.favorites : !directory.isEmpty() ? directory : store.recent;
-        if (list.isEmpty()) { status = "请先选择或添加一个电台"; publish(); return; }
-        int index = -1;
-        for (int i = 0; i < list.size(); i++) if (station != null && list.get(i).id.equals(station.id)) index = i;
-        play(list.get(MediaButtons.adjacentIndex(index, list.size(), direction)));
+        if (queue.tab == StationQueue.DISCOVER && direction > 0) { shuffle(); return; }
+        refreshQueue();
+        Station selected = queue.adjacent(station, direction);
+        if (selected == null) { status = "当前列表没有电台，请切换列表或调整搜索"; publish(); return; }
+        play(selected);
     }
 
     void shuffle() {
-        List<Station> pool = !directory.isEmpty() ? directory : !store.favorites.isEmpty() ? store.favorites : store.recent;
-        if (pool.isEmpty()) { next(1); return; }
-        List<Station> alternatives = new ArrayList<>(pool);
-        if (alternatives.size() > 1 && station != null) alternatives.removeIf(item -> item.id.equals(station.id));
-        play(alternatives.get(new java.util.Random().nextInt(alternatives.size())));
+        Station selected = StationQueue.random(directory, station, new java.util.Random());
+        if (selected == null) { status = "当前发现列表没有电台，请刷新或调整筛选"; publish(); return; }
+        play(selected);
+    }
+
+    void setBrowseContext(int tab, String query, String country, List<Station> visible) {
+        if (queue.tab != tab || !browseQuery.equals(query) || !browseCountry.equals(country)) {
+            browsing.edit().putInt("tab", tab).putString("query", query).putString("country", country).apply();
+        }
+        browseQuery = query; browseCountry = country;
+        if (tab == StationQueue.DISCOVER) { directory.clear(); directory.addAll(visible); }
+        queue.update(tab, query, visible);
+    }
+
+    private void refreshQueue() {
+        List<Station> source = queue.tab == StationQueue.FAVORITES ? store.favorites
+            : queue.tab == StationQueue.RECENT ? store.recent : directory;
+        List<Station> visible = new ArrayList<>();
+        for (Station item : source) {
+            if (queue.tab == StationQueue.DISCOVER || item.name.toLowerCase(java.util.Locale.ROOT).contains(browseQuery.toLowerCase(java.util.Locale.ROOT))) visible.add(item);
+        }
+        queue.update(queue.tab, browseQuery, visible);
     }
 
     void toggleFavorite(Station item) { store.favorite(item); sync.changed(); version++; notifyChildrenChanged("favorites"); publish(); }
