@@ -14,6 +14,7 @@ import android.os.Handler;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -73,6 +74,12 @@ public final class MainActivity extends Activity {
         build(); fetch(false);
     }
     @Override protected void onResume() { super.onResume(); handler.post(tick); }
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        // Some head units inject media keys into the foreground window instead of MediaSession.
+        RadioService service = RadioService.current;
+        if (service != null && service.handleMediaButton(event)) return true;
+        return super.dispatchKeyEvent(event);
+    }
     @Override protected void onPause() { handler.removeCallbacks(tick); super.onPause(); }
     @Override protected void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out); out.putInt("tab", tab); out.putString("query", query); out.putString("country", country);

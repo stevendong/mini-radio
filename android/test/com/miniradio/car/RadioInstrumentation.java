@@ -30,7 +30,7 @@ public final class RadioInstrumentation extends Instrumentation {
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
-            stationValidation(); libraryPersistence(); syncMerging(); secureCredentials(); mediaBrowser();
+            stationValidation(); libraryPersistence(); syncMerging(); secureCredentials(); mediaButtons(); mediaBrowser();
             result.putString("stream", "PASS: " + checks + " Android assertions\n"); finish(-1, result);
         } catch (Throwable error) {
             result.putString("stream", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage() + "\n"); finish(0, result);
@@ -146,5 +146,25 @@ public final class RadioInstrumentation extends Instrumentation {
         check(!SyncCredentials.validServer("http://example.com") && !SyncCredentials.validServer("https://example.com?key=x")
             && !SyncCredentials.validServer("https://user:secret@example.com"), "Sync endpoint validation");
         isolated().getSharedPreferences("sync-credentials", Context.MODE_PRIVATE).edit().clear().commit();
+    }
+    private void mediaButtons() {
+        java.util.List<Integer> skips = new java.util.ArrayList<>();
+        MediaButtons.Navigation navigation = skips::add;
+        long time = android.os.SystemClock.uptimeMillis();
+        check(MediaButtons.handle(new android.view.KeyEvent(time, time, android.view.KeyEvent.ACTION_DOWN,
+            android.view.KeyEvent.KEYCODE_MEDIA_NEXT, 0), navigation), "Next key handled");
+        MediaButtons.handle(new android.view.KeyEvent(time, time + 10, android.view.KeyEvent.ACTION_DOWN,
+            android.view.KeyEvent.KEYCODE_MEDIA_NEXT, 1), navigation);
+        MediaButtons.handle(new android.view.KeyEvent(time, time + 20, android.view.KeyEvent.ACTION_UP,
+            android.view.KeyEvent.KEYCODE_MEDIA_NEXT, 0), navigation);
+        check(skips.size() == 1 && skips.get(0) == 1, "Key repeat and release do not skip again");
+        check(MediaButtons.handle(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,
+            android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS), navigation) && skips.get(1) == -1, "Previous key handled");
+        check(!MediaButtons.handle(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,
+            android.view.KeyEvent.KEYCODE_VOLUME_UP), navigation), "Volume remains with the system");
+        check(!MediaButtons.handle(null, navigation), "Missing event ignored");
+        check(MediaButtons.adjacentIndex(0, 3, -1) == 2 && MediaButtons.adjacentIndex(2, 3, 1) == 0, "Station queue wraps in both directions");
+        check(MediaButtons.adjacentIndex(-1, 3, -1) == 2 && MediaButtons.adjacentIndex(-1, 3, 1) == 0, "Unlisted current station starts at correct queue edge");
+        check(MediaButtons.adjacentIndex(0, 1, -1) == 0 && MediaButtons.adjacentIndex(-1, 0, 1) == -1, "Single and empty queues");
     }
 }

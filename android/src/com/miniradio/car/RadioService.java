@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.service.media.MediaBrowserService;
+import android.view.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -73,6 +74,10 @@ public final class RadioService extends MediaBrowserService {
         session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
         session.setSessionActivity(openApp());
         session.setCallback(new MediaSession.Callback() {
+            @Override public boolean onMediaButtonEvent(Intent intent) {
+                KeyEvent event = intent == null ? null : intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                return handleMediaButton(event) || super.onMediaButtonEvent(intent);
+            }
             @Override public void onPlay() { resume(); }
             @Override public void onPause() { pause(); }
             @Override public void onStop() { stopPlayback(); }
@@ -98,12 +103,14 @@ public final class RadioService extends MediaBrowserService {
             if ("play".equals(action)) resume();
             else if ("pause".equals(action)) pause();
             else if ("next".equals(action)) next(1);
+            else if ("previous".equals(action)) next(-1);
             else if ("stop".equals(action)) stopPlayback();
         }
         return START_NOT_STICKY;
     }
 
     boolean active() { return state == PlaybackState.STATE_PLAYING || state == PlaybackState.STATE_BUFFERING; }
+    boolean handleMediaButton(KeyEvent event) { return MediaButtons.handle(event, this::next); }
 
     void play(Station selected) {
         if (selected == null || selected.streams().isEmpty()) return;
@@ -203,7 +210,7 @@ public final class RadioService extends MediaBrowserService {
         if (list.isEmpty()) { status = "请先选择或添加一个电台"; publish(); return; }
         int index = -1;
         for (int i = 0; i < list.size(); i++) if (station != null && list.get(i).id.equals(station.id)) index = i;
-        play(list.get(Math.floorMod(index + direction, list.size())));
+        play(list.get(MediaButtons.adjacentIndex(index, list.size(), direction)));
     }
 
     void shuffle() {
@@ -277,6 +284,7 @@ public final class RadioService extends MediaBrowserService {
             .setContentTitle(station == null ? "Mini Radio" : station.name).setContentText(status)
             .setContentIntent(openApp()).setVisibility(Notification.VISIBILITY_PUBLIC).setOnlyAlertOnce(true)
             .setOngoing(active()).setDeleteIntent(command("stop"))
+            .addAction(android.R.drawable.ic_media_previous, "上一站", command("previous"))
             .addAction(active() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, active() ? "暂停" : "播放", command(active() ? "pause" : "play"))
             .addAction(android.R.drawable.ic_media_next, "下一站", command("next"))
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "停止", command("stop"))
