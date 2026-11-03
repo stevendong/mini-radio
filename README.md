@@ -1,6 +1,6 @@
 # Mini Radio
 
-原生 macOS / iOS 小收音机 · SwiftUI + AVFoundation · macOS 13+ / iOS 16+
+原生 macOS / iOS / Android 小收音机 · macOS 13+ / iOS 16+ / Android 8.0+
 
 菜单栏控制、随机换台、电台搜索、收藏与最近收听、手动直播地址、音量和睡眠定时。
 
@@ -19,6 +19,28 @@ bash scripts/build-ios.sh device
 电台目录：[Radio Browser](https://www.radio-browser.info/) · 体验灵感：[RoamDial](https://roamdial.com/about.html)
 
 iOS 专用界面位于 `App/iOS`，Xcode 工程为 `iOS/MiniRadio.xcodeproj`，方案为 `MiniRadio-iOS`。首次构建可先运行上述 iOS 脚本生成图标和无签名 IPA。真机安装前需在 Xcode 选择自己的签名团队，或自行签名 IPA；仓库不包含证书和描述文件。iOS 版支持后台音频、系统媒体控制、系统音量和 AirPlay 输出。
+
+## Android 车机
+
+Android 0.4.0 位于 `android/`，使用 Java 和 Android 原生 SDK，无第三方运行时依赖。界面适配横屏、分屏窗口和低密度车机屏幕；支持发现、地区筛选、搜索、收藏、最近 50 个收听电台、手动直播地址、随机换台和睡眠定时。目录不可达时可使用本机缓存和预置电台；直播是否可播放取决于电台与当前网络。
+
+播放器通过前台服务保持后台播放，使用 MediaSession 提供系统播放/暂停、停止、上一站、下一站和收藏操作，并通过 MediaBrowserService 提供收藏、最近、发现三个目录。音量使用车机或方向盘的系统控制。导航提示可降低播放音量，临时音频打断结束后恢复；其他音源永久接管、用户暂停或断开音频输出时不自动抢回播放。支持 Android 原生解码器可播放的 MP3、AAC 和 HLS 音源。
+
+构建需要 JDK 17+、Android SDK Platform 35 和 Build Tools 36.0.0。设置 `JAVA_HOME`、`ANDROID_SDK_ROOT`（也支持 `ANDROID_HOME`）后运行：
+
+```sh
+bash scripts/build-android.sh
+ANDROID_SERIAL=YOUR_DEVICE_SERIAL bash scripts/build-android.sh install
+ANDROID_SERIAL=YOUR_DEVICE_SERIAL bash scripts/test-android.sh
+```
+
+产物为 `artifacts/android/MiniRadio-Android-0.4.0.apk`。测试脚本在指定设备运行独立偏好文件中的电台校验、收藏与历史持久化、同步合并、Keystore 加密和媒体目录检查，不修改个人收藏。当前面向 Android 9 车机兼容使用 target SDK 28，最低 API 26；此配置用于车机侧载，不用于应用商店上架。SDK 路径默认使用 macOS 常见安装位置，可通过环境变量修改；平台和构建工具版本分别可通过 `ANDROID_PLATFORM`、`ANDROID_BUILD_TOOLS_VERSION` 覆盖。
+
+脚本首次构建会在仓库外创建本机开发签名，后续覆盖安装保留数据；自有签名可使用 `MINI_RADIO_KEYSTORE`、`MINI_RADIO_KEY_ALIAS`、`MINI_RADIO_STORE_PASSWORD` 和 `MINI_RADIO_KEY_PASSWORD` 配置。签名文件、配置和 APK 均不提交到仓库。
+
+在“更多 → 收藏与收听同步”填写 HTTPS 服务地址与同步密钥。密钥使用 Android Keystore 的 AES-GCM 加密后保存在应用私有偏好中。启用后启动同步、每分钟检查更新，收藏和成功收听变更在约一秒后同步；失败保留本机数据并重试。合并协议与 macOS/iOS 相同，下载的数据不会切换当前播放。停用同步保留已有数据。
+
+普通构建不包含同步配置。为私有设备预置配置时，可将包含 `server` 和 `key` 字段的 JSON 文件保存在仓库外，通过 `MINI_RADIO_SYNC_CONFIG` 指定该文件再执行构建或安装；应用首次读取该配置后自动开启同步，相同配置不覆盖用户后续停用选择。此 APK 内含同步密钥，只用于私有安装，不应公开分发；公开源码和构建不包含该文件或密钥。
 
 ## CarPlay
 

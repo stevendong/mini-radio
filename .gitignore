@@ -19,3 +19,6 @@ __pycache__/
 *.sqlite-wal
 *.sqlite-shm
 invitations.json
+android/local.properties
+*.keystore
+*.jks
