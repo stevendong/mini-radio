@@ -30,11 +30,56 @@ public final class RadioInstrumentation extends Instrumentation {
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
-            stationValidation(); libraryPersistence(); syncMerging(); secureCredentials(); mediaButtons(); stationQueues(); mediaBrowser();
+            themeResources(); stationValidation(); libraryPersistence(); syncMerging(); secureCredentials(); mediaButtons(); stationQueues(); mediaBrowser();
             result.putString("stream", "PASS: " + checks + " Android assertions\n"); finish(-1, result);
         } catch (Throwable error) {
             result.putString("stream", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage() + "\n"); finish(0, result);
         }
+    }
+    private void themeResources() {
+        int[] backgrounds = new int[2];
+        int index = 0;
+        for (int mode : new int[]{android.content.res.Configuration.UI_MODE_NIGHT_NO,
+                android.content.res.Configuration.UI_MODE_NIGHT_YES}) {
+            android.content.res.Configuration configuration = new android.content.res.Configuration(
+                getTargetContext().getResources().getConfiguration());
+            configuration.uiMode = (configuration.uiMode & ~android.content.res.Configuration.UI_MODE_NIGHT_MASK) | mode;
+            Context context = getTargetContext().createConfigurationContext(configuration);
+            backgrounds[index++] = context.getColor(R.color.radio_background);
+            for (int surface : new int[]{R.color.radio_background, R.color.radio_card, R.color.radio_control}) {
+                for (int text : new int[]{R.color.radio_foreground, R.color.radio_muted, R.color.radio_accent}) {
+                    check(contrast(context.getColor(text), context.getColor(surface)) >= 4.5,
+                        "Readable text and accent in each day/night surface");
+                }
+            }
+            check(contrast(context.getColor(R.color.radio_on_accent), context.getColor(R.color.radio_accent)) >= 4.5,
+                "Readable selected tabs and primary buttons");
+            Context themed = new android.view.ContextThemeWrapper(context, R.style.AppTheme);
+            Context dialog = new android.app.AlertDialog.Builder(themed).getContext();
+            android.content.res.TypedArray attributes = dialog.obtainStyledAttributes(new int[]{
+                android.R.attr.textColorPrimary, android.R.attr.colorBackground});
+            try {
+                check(contrast(attributes.getColor(0, 0), attributes.getColor(1, 0)) >= 4.5,
+                    "Native dialog text follows day/night colors");
+            } finally { attributes.recycle(); }
+            check(context.getResources().getBoolean(R.bool.radio_light_system_bars)
+                == (mode == android.content.res.Configuration.UI_MODE_NIGHT_NO), "System bar icons follow mode");
+        }
+        check(backgrounds[0] != backgrounds[1], "Day and night select different backgrounds");
+    }
+    private static double contrast(int first, int second) {
+        double a = luminance(first), b = luminance(second);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    }
+    private static double luminance(int color) {
+        double result = 0;
+        int[] channels = {android.graphics.Color.red(color), android.graphics.Color.green(color), android.graphics.Color.blue(color)};
+        double[] weights = {0.2126, 0.7152, 0.0722};
+        for (int i = 0; i < 3; i++) {
+            double value = channels[i] / 255.0;
+            result += weights[i] * (value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4));
+        }
+        return result;
     }
     private void stationValidation() throws Exception {
         check(Station.validURL(" https://example.com/live "), "HTTPS accepted");

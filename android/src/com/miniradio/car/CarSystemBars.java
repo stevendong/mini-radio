@@ -1,8 +1,6 @@
 package com.miniradio.car;
 
 import android.app.Activity;
-import android.content.res.Configuration;
-import android.graphics.Color;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
@@ -71,7 +69,10 @@ final class CarSystemBars implements ViewTreeObserver.OnPreDrawListener {
             if (hidden) activityBars.invoke(activity, -1, View.VISIBLE);
             if (!force && !hidden && area.equals(requestedArea)) return;
             activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            activity.getWindow().getDecorView().setSystemUiVisibility(
+                activity.getResources().getBoolean(R.bool.radio_light_system_bars)
+                    ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                    : View.SYSTEM_UI_FLAG_VISIBLE);
             managerBars.invoke(manager, 0, 2000, View.VISIBLE);
             managerBars.invoke(manager, 0, 2019, View.VISIBLE);
             requestedArea = area;
@@ -91,9 +92,7 @@ final class CarSystemBars implements ViewTreeObserver.OnPreDrawListener {
             int top = Math.max(0, Math.min(frame.getHeight(), statusHeight - position[1]));
             int bottom = Math.max(0, Math.min(frame.getHeight(),
                 position[1] + frame.getHeight() - (displayHeight - DOCK_SIZE)));
-            boolean dark = (activity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
-                == Configuration.UI_MODE_NIGHT_YES;
-            frame.setBackgroundColor(dark ? Color.rgb(16, 27, 34) : Color.rgb(184, 188, 196));
+            frame.setBackgroundColor(activity.getColor(R.color.radio_system_bar));
             FrameLayout.LayoutParams layout = (FrameLayout.LayoutParams) content.getLayoutParams();
             if (layout.leftMargin == left && layout.topMargin == top && layout.bottomMargin == bottom) return true;
             layout.setMargins(left, top, 0, bottom);

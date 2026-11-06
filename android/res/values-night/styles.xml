@@ -1,0 +1,30 @@
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:textColorPrimary">@color/radio_foreground</item>
+        <item name="android:textColorSecondary">@color/radio_muted</item>
+        <item name="android:textColorHint">@color/radio_muted</item>
+        <item name="android:colorControlNormal">@color/radio_muted</item>
+        <item name="android:colorControlActivated">@color/radio_accent</item>
+        <item name="android:alertDialogTheme">@style/RadioDialog</item>
+        <item name="android:colorAccent">@color/radio_accent</item>
+        <item name="android:windowLightStatusBar">@bool/radio_light_system_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/radio_light_system_bars</item>
+        <item name="android:statusBarColor">@color/radio_system_bar</item>
+        <item name="android:navigationBarColor">@color/radio_system_bar</item>
+        <item name="android:windowBackground">@color/radio_background</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+    </style>
+    <style name="RadioDialog" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/radio_accent</item>
+        <item name="android:colorBackground">@color/radio_card</item>
+        <item name="android:windowBackground">@color/radio_card</item>
+        <item name="android:textColorPrimary">@color/radio_foreground</item>
+        <item name="android:textColorSecondary">@color/radio_muted</item>
+        <item name="android:textColorHint">@color/radio_muted</item>
+        <item name="android:textColorAlertDialogListItem">@color/radio_foreground</item>
+        <item name="android:colorControlNormal">@color/radio_muted</item>
+        <item name="android:colorControlActivated">@color/radio_accent</item>
+    </style>
+</resources>

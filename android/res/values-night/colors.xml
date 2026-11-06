@@ -1,0 +1,12 @@
+<resources>
+    <color name="radio_background">#101B22</color>
+    <color name="radio_card">#192A32</color>
+    <color name="radio_control">#223B44</color>
+    <color name="radio_accent">#67E2C3</color>
+    <color name="radio_foreground">#EBF3F5</color>
+    <color name="radio_muted">#99AFB9</color>
+    <color name="radio_on_accent">#101B22</color>
+    <color name="radio_dial">#304A51</color>
+    <color name="radio_system_bar">#101B22</color>
+    <bool name="radio_light_system_bars">false</bool>
+</resources>
