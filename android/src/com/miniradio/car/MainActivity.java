@@ -22,6 +22,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -49,6 +50,7 @@ public final class MainActivity extends Activity {
     private EditText search;
     private StationAdapter adapter;
     private RadioService previousService;
+    private CarSystemBars systemBars;
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             RadioService service = RadioService.current;
@@ -77,6 +79,10 @@ public final class MainActivity extends Activity {
         build(); fetch(false);
     }
     @Override protected void onResume() { super.onResume(); handler.post(tick); }
+    @Override public void onWindowFocusChanged(boolean focused) {
+        super.onWindowFocusChanged(focused);
+        if (focused && systemBars != null) systemBars.showBars(true);
+    }
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         // Some head units inject media keys into the foreground window instead of MediaSession.
         RadioService service = RadioService.current;
@@ -91,6 +97,7 @@ public final class MainActivity extends Activity {
         super.onConfigurationChanged(configuration); build(); renderPlayer(); refreshRows();
     }
     @Override public void onDestroy() {
+        if (systemBars != null) systemBars.close();
         destroyed = true; generation++; handler.removeCallbacksAndMessages(null); network.shutdownNow(); super.onDestroy();
     }
 
@@ -118,8 +125,12 @@ public final class MainActivity extends Activity {
     private void gap(LinearLayout parent, int width, int height) { parent.addView(new View(this), new LinearLayout.LayoutParams(dp(width), dp(height))); }
 
     private void build() {
+        if (systemBars != null) systemBars.close();
         LinearLayout root = column(); root.setPadding(dp(24), dp(12), dp(24), dp(16)); root.setBackgroundColor(BG);
-        setContentView(root);
+        FrameLayout frame = new FrameLayout(this);
+        frame.addView(root, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(frame);
+        systemBars = CarSystemBars.attach(this, frame, root);
         LinearLayout header = row();
         TextView brand = text("MINI RADIO  /  听见远方", 22, WHITE); brand.setTypeface(null, Typeface.BOLD);
         header.addView(brand, weight(1, 64));
